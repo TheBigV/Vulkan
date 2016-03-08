@@ -1,0 +1,186 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Vulkan::Exception" Collapsed="true">
+    <Position X="20.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAIAAAAAAAAAAAAAABIAABgAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::RenderContext" Collapsed="true">
+    <Position X="6.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAgAAAAAAAAAIAAAAEoAAAgAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Dependent_RenderContext" Collapsed="true">
+    <Position X="8.25" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAgAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAgCAAAgAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Shader" Collapsed="true">
+    <Position X="10.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QAAIAAAAACAAAAAgAAAAAAAAAAAAAAEgBCAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Dependent_Shader" Collapsed="true">
+    <Position X="12.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAQAAAAAAAAAAAIAAAAAgAEAAgAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Buffer" Collapsed="true">
+    <Position X="0.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAACAAIAIAAAAAAAAAAAAAAAgAAAQQAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Program" Collapsed="true">
+    <Position X="2.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAEAAAAAIACAAAAAAAQAAAAAAEAAAAAAAAAAAQAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Shaders::Vertex" Collapsed="true">
+    <Position X="9.5" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Shaders::TessellationControl" Collapsed="true">
+    <Position X="11.75" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Shaders::TessellationEvaluation" Collapsed="true">
+    <Position X="14" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Shaders::Geometry" Collapsed="true">
+    <Position X="16.25" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Shaders::Fragment" Collapsed="true">
+    <Position X="5" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Vulkan::Shaders::Compute" Collapsed="true">
+    <Position X="7.25" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Typedef Name="Vulkan::string" Collapsed="true">
+    <Position X="24" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::sint8" Collapsed="true">
+    <Position X="22.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::sint16" Collapsed="true">
+    <Position X="24" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::sint32" Collapsed="true">
+    <Position X="18.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::sint64" Collapsed="true">
+    <Position X="20.5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::uint8" Collapsed="true">
+    <Position X="24" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::uint16" Collapsed="true">
+    <Position X="18.75" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::uint32" Collapsed="true">
+    <Position X="20.5" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::uint64" Collapsed="true">
+    <Position X="22.25" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::float16" Collapsed="true">
+    <Position X="18.75" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::float32" Collapsed="true">
+    <Position X="20.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::float64" Collapsed="true">
+    <Position X="22.25" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Typedef Name="Vulkan::unknownType" Collapsed="true">
+    <Position X="18.75" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>F:\Projects\Projects\Vulkan\Source\Vulkan\Vulkan.hpp</FileName>
+    </TypeIdentifier>
+  </Typedef>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
