@@ -362,6 +362,8 @@ namespace BVE
 
 		inline VkImageView										CreateImageView(VkDevice vk_device, VkImageViewCreateInfo* vk_imageViewCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
 
+		inline VkSampler										CreateSampler(VkDevice vk_device, VkSamplerCreateInfo* vk_samplerCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
+
 		inline VkShaderModule									CreateShaderModule(VkDevice vk_device, VkShaderModuleCreateInfo* vk_shaderModuleCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
 
 		inline VkPipelineCache									CreatePipelineCache(VkDevice vk_device, VkPipelineCacheCreateInfo* vk_pipelineCacheCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
@@ -1256,6 +1258,28 @@ inline VkImageView												BVE::Vulkan::CreateImageView(VkDevice vk_device, V
 	return vk_imageView;
 }
 
+inline VkSampler												BVE::Vulkan::CreateSampler(VkDevice vk_device, VkSamplerCreateInfo* vk_samplerCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	VkSampler vk_sampler;
+
+	auto vk_result = vkCreateSampler(vk_device, vk_samplerCreateInfo, vk_allocationCallbacks, &vk_sampler);
+	switch(vk_result)
+	{
+		case VK_SUCCESS:
+			break;
+		case VK_ERROR_OUT_OF_HOST_MEMORY:
+			throw BVE::Vulkan::Exceptions::Exception_OutOfHostMemory();
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+			throw BVE::Vulkan::Exceptions::Exception_OutOfDeviceMemory();
+		case VK_ERROR_TOO_MANY_OBJECTS:
+			throw BVE::Vulkan::Exceptions::Exception_TooManyObjects();
+		default:
+			throw BVE::Vulkan::Exceptions::Exception_UnknownException(vk_result);
+	}
+
+	return vk_sampler;
+}
+
 inline VkShaderModule											BVE::Vulkan::CreateShaderModule(VkDevice vk_device, VkShaderModuleCreateInfo* vk_shaderModuleCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks)
 {
 	VkShaderModule vk_ShaderModule;
@@ -1441,6 +1465,14 @@ inline void														BVE::Vulkan::Log::Clear()
 #if __BVE_VULKAN_DEBUG__
 	//if(!file) throw Exception("Can't write log.");
 #endif
+
+	auto timestamp = std::to_string(std::clock() - timestampClock);
+	string text = "[Log] Cleared";
+
+	fwrite(timestamp.c_str(), sizeof(char), timestamp.size(), file);
+	fwrite(": ", sizeof(char), 2, file);
+	fwrite(text.c_str(), sizeof(char), text.size(), file);
+	fwrite("\n", sizeof(char), 1, file);
 
 	fclose(file);
 

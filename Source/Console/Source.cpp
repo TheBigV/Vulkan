@@ -6,6 +6,9 @@
 #include "../Vulkan/Vulkan.hpp"
 #pragma comment(lib, "Vulkan.lib")
 
+//#define BVE_PATH(path) std::wstring(L"") + path
+#define BVE_PATH(path) std::wstring(L"../../../") + path
+
 #include <fstream>
 
 std::vector<uint32_t> loadFile(const std::wstring& filename)
@@ -51,14 +54,12 @@ VkBool32 __stdcall vk_debugCallback(
 	void*                                       pUserData)
 {
 	//MessageBoxA(0, pMessage, pLayerPrefix, MB_OK);
-	BVE::Vulkan::Log::Write("[" + BVE::string(pLayerPrefix) + "]" + BVE::string(pMessage));
+	BVE::Vulkan::Log::Write("[Vulkan][" + BVE::string(pLayerPrefix) + "]" + BVE::string(pMessage));
 	return false;
 }
 
-void main()
+void vulkan()
 {
-	BVE::Vulkan::Log::Clear();
-
 	system("mode con: cols=80 lines=1000");
 	int width = 512;
 	int height = 512;
@@ -115,6 +116,7 @@ void main()
 
 		return hWnd;
 	}();
+	BVE::Vulkan::Log::Write("[WinAPI] Window created");
 
 	auto vk_instance = [&]()
 	{
@@ -146,12 +148,22 @@ void main()
 			VK_EXT_DEBUG_REPORT_EXTENSION_NAME,			// supported
 		};
 
+		VkApplicationInfo vk_applicationInfo;
+		{
+			vk_applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+			vk_applicationInfo.pNext = nullptr;
+			vk_applicationInfo.pApplicationName = "amd suck large cocks";
+			vk_applicationInfo.applicationVersion = 0;
+			vk_applicationInfo.pEngineName = "fuck amd mom";
+			vk_applicationInfo.engineVersion = 0;
+			vk_applicationInfo.apiVersion = VK_API_VERSION;
+		}
 		VkInstanceCreateInfo vk_instanceInfo;
 		{
 			vk_instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 			vk_instanceInfo.pNext = nullptr;
 			vk_instanceInfo.flags = 0;
-			vk_instanceInfo.pApplicationInfo = nullptr;
+			vk_instanceInfo.pApplicationInfo = &vk_applicationInfo;
 			vk_instanceInfo.enabledLayerCount = vk_layers.size();
 			vk_instanceInfo.ppEnabledLayerNames = vk_layers.data();
 			vk_instanceInfo.enabledExtensionCount = vk_extensions.size();
@@ -309,13 +321,12 @@ void main()
 	}
 	auto vk_descriptorPool = [&]()
 	{
-		std::vector<VkDescriptorPoolSize> vk_descriptorPoolSizes(1);
+		std::vector<VkDescriptorPoolSize> vk_descriptorPoolSizes(2);
 		{
-			for(auto &vk_descriptorPoolSize : vk_descriptorPoolSizes)
-			{
-				vk_descriptorPoolSize.descriptorCount = 1;
-				vk_descriptorPoolSize.type = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;// VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-			}
+			vk_descriptorPoolSizes[0].descriptorCount = 1;
+			vk_descriptorPoolSizes[0].type = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			vk_descriptorPoolSizes[1].descriptorCount = 1;
+			vk_descriptorPoolSizes[1].type = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		}
 		VkDescriptorPoolCreateInfo vk_descriptorPoolCreateInfo;
 		{
@@ -653,48 +664,9 @@ void main()
 		return vk_renderPass;
 	}();
 
-	auto vk_descriptorSetLayouts = [&]()
-	{
-		std::vector<VkDescriptorSetLayout> vk_descriptorSetLayouts(1);
-
-		std::vector<VkDescriptorSetLayoutBinding> vk_descriptorSetLayoutBindings(0); // (2);
-		{
-			//vk_descriptorSetLayoutBindings[0];
-			//{
-			//	vk_descriptorSetLayoutBindings[0].binding = 0;
-			//	vk_descriptorSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			//	vk_descriptorSetLayoutBindings[0].descriptorCount = 1;
-			//	vk_descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-			//	vk_descriptorSetLayoutBindings[0].pImmutableSamplers = nullptr;
-			//}
-			//vk_descriptorSetLayoutBindings[1];
-			//{
-			//	vk_descriptorSetLayoutBindings[1].binding = 1;
-			//	vk_descriptorSetLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			//	vk_descriptorSetLayoutBindings[1].descriptorCount = 1;
-			//	vk_descriptorSetLayoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			//	vk_descriptorSetLayoutBindings[1].pImmutableSamplers = nullptr;
-			//}
-		}
-		VkDescriptorSetLayoutCreateInfo vk_descriptorSetLayoutCreateInfo;
-		{
-			vk_descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			vk_descriptorSetLayoutCreateInfo.pNext = nullptr;
-			vk_descriptorSetLayoutCreateInfo.flags = 0;
-			vk_descriptorSetLayoutCreateInfo.bindingCount = vk_descriptorSetLayoutBindings.size();
-			vk_descriptorSetLayoutCreateInfo.pBindings = vk_descriptorSetLayoutBindings.data();
-		}
-		for(auto &vk_descriptorSetLayout : vk_descriptorSetLayouts)
-		{
-			vk_descriptorSetLayout = BVE::Vulkan::CreateDescriptorSetLayout(vk_device, &vk_descriptorSetLayoutCreateInfo, nullptr);
-		}
-
-		return vk_descriptorSetLayouts;
-	}();
-
 	auto vk_vertexShaderModule = [&]()
 	{
-		auto vk_vertexShaderSourceCode = std::move(loadFile(L"../../../Media/Shaders/1.vert.spv"));
+		auto vk_vertexShaderSourceCode = std::move(loadFile(BVE_PATH(L"Media/Shaders/1.vert.spv")));
 
 		VkShaderModuleCreateInfo vk_shaderModuleCreateInfo;
 		{
@@ -711,7 +683,7 @@ void main()
 	}();
 	auto vk_fragmentShaderModule = [&]()
 	{
-		auto vk_fragmentShaderSourceCode = std::move(loadFile(L"../../../Media/Shaders/1.frag.spv"));
+		auto vk_fragmentShaderSourceCode = std::move(loadFile(BVE_PATH(L"Media/Shaders/1.frag.spv")));
 
 		VkShaderModuleCreateInfo vk_shaderModuleCreateInfo;
 		{
@@ -727,6 +699,44 @@ void main()
 		return vk_fragmentShaderModule;
 	}();
 
+	auto vk_descriptorSetLayouts = [&]()
+	{
+		std::vector<VkDescriptorSetLayout> vk_descriptorSetLayouts(1);
+
+		std::vector<VkDescriptorSetLayoutBinding> vk_descriptorSetLayoutBindings(2);
+		{
+			vk_descriptorSetLayoutBindings[0];
+			{
+				vk_descriptorSetLayoutBindings[0].binding = 0;
+				vk_descriptorSetLayoutBindings[0].descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				vk_descriptorSetLayoutBindings[0].descriptorCount = 1;
+				vk_descriptorSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+				vk_descriptorSetLayoutBindings[0].pImmutableSamplers = nullptr;
+			}
+			vk_descriptorSetLayoutBindings[1];
+			{
+				vk_descriptorSetLayoutBindings[1].binding = 1;
+				vk_descriptorSetLayoutBindings[1].descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				vk_descriptorSetLayoutBindings[1].descriptorCount = 1;
+				vk_descriptorSetLayoutBindings[1].stageFlags = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+				vk_descriptorSetLayoutBindings[1].pImmutableSamplers = nullptr;
+			}
+		}
+		VkDescriptorSetLayoutCreateInfo vk_descriptorSetLayoutCreateInfo;
+		{
+			vk_descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			vk_descriptorSetLayoutCreateInfo.pNext = nullptr;
+			vk_descriptorSetLayoutCreateInfo.flags = 0;
+			vk_descriptorSetLayoutCreateInfo.bindingCount = vk_descriptorSetLayoutBindings.size();
+			vk_descriptorSetLayoutCreateInfo.pBindings = vk_descriptorSetLayoutBindings.data();
+		}
+		for(auto &vk_descriptorSetLayout : vk_descriptorSetLayouts)
+		{
+			vk_descriptorSetLayout = BVE::Vulkan::CreateDescriptorSetLayout(vk_device, &vk_descriptorSetLayoutCreateInfo, nullptr);
+		}
+
+		return vk_descriptorSetLayouts;
+	}();
 	auto vk_pipelineLayout = [&]()
 	{
 		VkPipelineLayoutCreateInfo vk_pipelineLayoutCreateInfo;
@@ -1044,26 +1054,135 @@ void main()
 		return std::move(vk_framebuffers);
 	}();
 
-	auto vk_descriptorSets = BVE::Vulkan::AllocateDescriptorSets(vk_device, vk_descriptorPool, 1, vk_descriptorSetLayouts.data());
+	auto vk_textureLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	auto vk_textureImage = [&]()
 	{
-		VkDescriptorBufferInfo;
-		std::vector<VkWriteDescriptorSet> vk_writeDescriptorSet(0);
+		VkImageCreateInfo vk_imageCreateInfo;
 		{
-			//vk_writeDescriptorSet[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			//vk_writeDescriptorSet[0].pNext = nullptr;
-			//vk_writeDescriptorSet[0].dstSet = 0;
-			//vk_writeDescriptorSet[0].dstBinding = vk_descriptorSets[0];
-			//vk_writeDescriptorSet[0].dstArrayElement = 0;
-			//vk_writeDescriptorSet[0].descriptorCount = vk_descriptorSets.size();
-			//vk_writeDescriptorSet[0].descriptorType;
-			//vk_writeDescriptorSet[0].pImageInfo;
-			//vk_writeDescriptorSet[0].pBufferInfo;
-			//vk_writeDescriptorSet[0].pTexelBufferView;
+			vk_imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+			vk_imageCreateInfo.pNext = nullptr;
+			vk_imageCreateInfo.flags = 0;// VkImageCreateFlagBits::VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+			vk_imageCreateInfo.imageType = VkImageType::VK_IMAGE_TYPE_2D;
+			vk_imageCreateInfo.format = VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
+			vk_imageCreateInfo.extent;
+			{
+				vk_imageCreateInfo.extent.width = 1024;
+				vk_imageCreateInfo.extent.height = 1024;
+				vk_imageCreateInfo.extent.depth = 1;
+			}
+			vk_imageCreateInfo.mipLevels = 1;
+			vk_imageCreateInfo.arrayLayers = 1;
+			vk_imageCreateInfo.samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+			vk_imageCreateInfo.tiling = VkImageTiling::VK_IMAGE_TILING_LINEAR;
+			vk_imageCreateInfo.usage = VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
+			vk_imageCreateInfo.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+			vk_imageCreateInfo.queueFamilyIndexCount = 0;
+			vk_imageCreateInfo.pQueueFamilyIndices = nullptr;
+			vk_imageCreateInfo.initialLayout = vk_textureLayout;
 		}
-		vkUpdateDescriptorSets(vk_device, vk_writeDescriptorSet.size(), vk_writeDescriptorSet.data(), 0, nullptr);
-	}
 
-	auto vk_buffer = [&]()
+		auto vk_image = BVE::Vulkan::CreateImage(vk_device, &vk_imageCreateInfo, nullptr);
+
+		auto vk_memoryRequirements = BVE::Vulkan::GetImageMemoryRequirements(vk_device, vk_image);
+
+		VkDeviceMemory vk_deviceMemory;
+		{
+			VkMemoryAllocateInfo vk_memoryAllocateInfo;
+			{
+				vk_memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+				vk_memoryAllocateInfo.pNext = nullptr;
+				vk_memoryAllocateInfo.allocationSize = vk_memoryRequirements.size;
+				vk_memoryAllocateInfo.memoryTypeIndex = BVE::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+			}
+
+			vk_deviceMemory = BVE::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
+
+			std::vector<BVE::uint32> textureData(1024 * 1024 * 1);
+			{
+				for(size_t x = 0; x < 1024; ++x)
+				for(size_t y = 0; y < 1024; ++y)
+				{
+					auto &color = textureData[y * 1024 + x];
+					color = 0xFF000000 | (((BVE::uint32)(x * 255 / 1024)) << 8) | (((BVE::uint32)(y * 255 / 1024)) << 16);
+				}
+				//for(auto &color : textureData)
+				//{
+				//	color = 0xFFFF0000; //  AA BB GG RR
+				//}
+			}
+
+			auto data = BVE::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, vk_memoryAllocateInfo.allocationSize, 0);
+
+			memcpy(data, textureData.data(), textureData.size() * sizeof(BVE::uint32));
+
+			BVE::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
+
+			BVE::Vulkan::BindImageMemory(vk_device, vk_image, vk_deviceMemory, 0);
+		}
+
+		return vk_image;
+	}();
+	auto vk_textureImageView = [&]()
+	{
+		VkImageViewCreateInfo vk_imageViewCreateInfo;
+		{
+			vk_imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			vk_imageViewCreateInfo.pNext = nullptr;
+			vk_imageViewCreateInfo.flags = 0;
+			vk_imageViewCreateInfo.image = vk_textureImage;
+			vk_imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			vk_imageViewCreateInfo.format = VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
+			vk_imageViewCreateInfo.components;
+			{
+				vk_imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+				vk_imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+				vk_imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+				vk_imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+			}
+			vk_imageViewCreateInfo.subresourceRange;
+			{
+				vk_imageViewCreateInfo.subresourceRange.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+				vk_imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+				vk_imageViewCreateInfo.subresourceRange.levelCount = 1;
+				vk_imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+				vk_imageViewCreateInfo.subresourceRange.layerCount = 1;
+			}
+		}
+
+		auto vk_imageView = BVE::Vulkan::CreateImageView(vk_device, &vk_imageViewCreateInfo, nullptr);
+
+		return vk_imageView;
+	}();
+	auto vk_textureSampler = [&]()
+	{
+		VkSamplerCreateInfo vk_samplerCreateInfo;
+		{
+			vk_samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			vk_samplerCreateInfo.pNext = nullptr;
+			vk_samplerCreateInfo.flags = 0;
+			vk_samplerCreateInfo.magFilter = VkFilter::VK_FILTER_NEAREST;
+			vk_samplerCreateInfo.minFilter = VkFilter::VK_FILTER_NEAREST;
+			vk_samplerCreateInfo.mipmapMode = VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_NEAREST;
+			vk_samplerCreateInfo.addressModeU = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			vk_samplerCreateInfo.addressModeV = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			vk_samplerCreateInfo.addressModeW = VkSamplerAddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			vk_samplerCreateInfo.mipLodBias = 0.0f;
+			vk_samplerCreateInfo.anisotropyEnable = VK_FALSE;
+			vk_samplerCreateInfo.maxAnisotropy = 0.0f;
+			vk_samplerCreateInfo.compareEnable = VK_FALSE;
+			vk_samplerCreateInfo.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
+			vk_samplerCreateInfo.minLod = 0.0f;
+			vk_samplerCreateInfo.maxLod = 0.0f;
+			vk_samplerCreateInfo.borderColor = VkBorderColor::VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
+			vk_samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+		}
+
+		auto vk_sampler = BVE::Vulkan::CreateSampler(vk_device, &vk_samplerCreateInfo, nullptr);
+
+		return vk_sampler;
+	}();
+
+	auto vk_vertexBuffer = [&]()
 	{
 		VkBufferCreateInfo vk_bufferCreateInfo;
 		{
@@ -1099,7 +1218,8 @@ void main()
 		std::vector<BVE::float32> vArr = {
 			-0.5f, +0.5f,
 			+0.5f, +0.5f,
-			+0.0f, -0.5f,
+			-0.5f, -0.5f,
+			+0.5f, -0.5f,
 		};
 
 		auto data = BVE::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(BVE::float32) * 2 * 3, 0);
@@ -1108,23 +1228,288 @@ void main()
 
 		BVE::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
 
-		/*std::vector<BVE::float32> tdata(6);
-		auto data1 = (BVE::float32*)BVE::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(BVE::float32) * 2 * 3, 0);
+		BVE::Vulkan::BindBufferMemory(vk_device, vk_buffer, vk_deviceMemory, 0);
 
-		memcpy(tdata.data(), data1, sizeof(BVE::float32) * 6);
-		tdata[0];
+		return vk_buffer;
+	}();
 
-		BVE::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);*/
+	auto vk_indexBuffer = [&]()
+	{
+		VkBufferCreateInfo vk_bufferCreateInfo;
+		{
+			vk_bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			vk_bufferCreateInfo.pNext = nullptr;
+			vk_bufferCreateInfo.flags = 0;
+			vk_bufferCreateInfo.size = sizeof(BVE::uint32) * 6;
+			vk_bufferCreateInfo.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+			vk_bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			vk_bufferCreateInfo.queueFamilyIndexCount = 0;
+			vk_bufferCreateInfo.pQueueFamilyIndices = nullptr;
+		}
+
+		auto vk_buffer = BVE::Vulkan::CreateBuffer(vk_device, &vk_bufferCreateInfo, nullptr);
+
+		auto vk_memoryRequirements = BVE::Vulkan::GetBufferMemoryRequirements(vk_device, vk_buffer);
+
+		auto vk_deviceMemory = [&]()
+		{
+			VkMemoryAllocateInfo vk_memoryAllocateInfo;
+			{
+				vk_memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+				vk_memoryAllocateInfo.pNext = nullptr;
+				vk_memoryAllocateInfo.allocationSize = vk_memoryRequirements.size;
+				vk_memoryAllocateInfo.memoryTypeIndex = BVE::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+			}
+
+			auto vk_deviceMemory = BVE::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
+
+			return vk_deviceMemory;
+		}();
+
+		std::vector<BVE::uint32> vArr = {
+			0, 1, 2,
+			1, 3, 2
+		};
+
+		auto data = BVE::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(BVE::uint32) * 6, 0);
+
+		memcpy(data, vArr.data(), vArr.size() * sizeof(BVE::uint32));
+
+		BVE::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
 
 		BVE::Vulkan::BindBufferMemory(vk_device, vk_buffer, vk_deviceMemory, 0);
 
 		return vk_buffer;
 	}();
 
+	auto vk_uniformBuffer = [&]()
+	{
+		VkBufferCreateInfo vk_bufferCreateInfo;
+		{
+			vk_bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+			vk_bufferCreateInfo.pNext = nullptr;
+			vk_bufferCreateInfo.flags = 0;
+			vk_bufferCreateInfo.size = sizeof(BVE::float32) * 4;
+			vk_bufferCreateInfo.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+			vk_bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			vk_bufferCreateInfo.queueFamilyIndexCount = 0;
+			vk_bufferCreateInfo.pQueueFamilyIndices = nullptr;
+		}
+
+		auto vk_buffer = BVE::Vulkan::CreateBuffer(vk_device, &vk_bufferCreateInfo, nullptr);
+
+		auto vk_memoryRequirements = BVE::Vulkan::GetBufferMemoryRequirements(vk_device, vk_buffer);
+
+		auto vk_deviceMemory = [&]()
+		{
+			VkMemoryAllocateInfo vk_memoryAllocateInfo;
+			{
+				vk_memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+				vk_memoryAllocateInfo.pNext = nullptr;
+				vk_memoryAllocateInfo.allocationSize = vk_memoryRequirements.size;
+				vk_memoryAllocateInfo.memoryTypeIndex = BVE::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+			}
+
+			auto vk_deviceMemory = BVE::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
+
+			return vk_deviceMemory;
+		}();
+
+		std::vector<BVE::float32> vArr = {
+			1.0f, 1.0f, 0.0f, 1.0f
+		};
+
+		auto data = BVE::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(BVE::uint32) * 4, 0);
+
+		memcpy(data, vArr.data(), vArr.size() * sizeof(BVE::float32));
+
+		BVE::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
+
+		BVE::Vulkan::BindBufferMemory(vk_device, vk_buffer, vk_deviceMemory, 0);
+
+		return vk_buffer;
+	}();
+
+	auto vk_descriptorSets = BVE::Vulkan::AllocateDescriptorSets(vk_device, vk_descriptorPool, 1, vk_descriptorSetLayouts.data());
+	{
+		std::vector<VkDescriptorBufferInfo> vk_descriptorBufferInfos(1);
+		{
+			vk_descriptorBufferInfos[0].buffer = vk_uniformBuffer;
+			vk_descriptorBufferInfos[0].offset = 0;
+			vk_descriptorBufferInfos[0].range = VK_WHOLE_SIZE;
+		}
+		std::vector<VkDescriptorImageInfo> vk_descriptorImageInfos(1);
+		{
+			vk_descriptorImageInfos[0].sampler = vk_textureSampler;
+			vk_descriptorImageInfos[0].imageView = vk_textureImageView;
+			vk_descriptorImageInfos[0].imageLayout = vk_textureLayout;
+		}
+
+		VkDescriptorBufferInfo;
+		std::vector<VkWriteDescriptorSet> vk_writeDescriptorSet(2);
+		{
+			vk_writeDescriptorSet[0];
+			{
+				vk_writeDescriptorSet[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				vk_writeDescriptorSet[0].pNext = nullptr;
+				vk_writeDescriptorSet[0].dstSet = vk_descriptorSets[0];
+				vk_writeDescriptorSet[0].dstBinding = 0;
+				vk_writeDescriptorSet[0].dstArrayElement = 0;
+				vk_writeDescriptorSet[0].descriptorCount = vk_descriptorBufferInfos.size();
+				vk_writeDescriptorSet[0].descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				vk_writeDescriptorSet[0].pImageInfo = nullptr;
+				vk_writeDescriptorSet[0].pBufferInfo = vk_descriptorBufferInfos.data();
+				vk_writeDescriptorSet[0].pTexelBufferView = nullptr;
+			}
+			vk_writeDescriptorSet[1];
+			{
+				vk_writeDescriptorSet[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				vk_writeDescriptorSet[1].pNext = nullptr;
+				vk_writeDescriptorSet[1].dstSet = vk_descriptorSets[0];
+				vk_writeDescriptorSet[1].dstBinding = 1;
+				vk_writeDescriptorSet[1].dstArrayElement = 0;
+				vk_writeDescriptorSet[1].descriptorCount = vk_descriptorImageInfos.size();
+				vk_writeDescriptorSet[1].descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				vk_writeDescriptorSet[1].pImageInfo = vk_descriptorImageInfos.data();
+				vk_writeDescriptorSet[1].pBufferInfo = nullptr;
+				vk_writeDescriptorSet[1].pTexelBufferView = nullptr;
+			}
+		}
+		vkUpdateDescriptorSets(vk_device, vk_writeDescriptorSet.size(), vk_writeDescriptorSet.data(), 0, nullptr);
+	}
+
 	auto vk_commandBuffers = [&]()
 	{
-		auto vk_commandBuffers = BVE::Vulkan::AllocateCommandBuffers(vk_device, vk_commandPool, 1, VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-		BVE::Vulkan::ResetCommandBuffer(vk_commandBuffers[0], VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+		auto vk_commandBuffers = BVE::Vulkan::AllocateCommandBuffers(vk_device, vk_commandPool, vk_framebuffers.size(), VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+		for(size_t i = 0; i < vk_commandBuffers.size(); ++i)
+		{
+			BVE::Vulkan::ResetCommandBuffer(vk_commandBuffers[i], VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+			vk_commandBuffers[i];
+			{
+				VkCommandBufferInheritanceInfo vk_commandBufferInheritanceInfo;
+				{
+					vk_commandBufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+					vk_commandBufferInheritanceInfo.pNext = nullptr;
+					vk_commandBufferInheritanceInfo.renderPass = VK_NULL_HANDLE;
+					vk_commandBufferInheritanceInfo.subpass = 0;
+					vk_commandBufferInheritanceInfo.framebuffer = vk_framebuffers[i];
+					vk_commandBufferInheritanceInfo.occlusionQueryEnable = VK_FALSE;
+					vk_commandBufferInheritanceInfo.queryFlags = 0;
+					vk_commandBufferInheritanceInfo.pipelineStatistics = 0;
+				}
+				VkCommandBufferBeginInfo vk_commandBufferBeginInfo;
+				{
+					vk_commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+					vk_commandBufferBeginInfo.pNext = nullptr;
+					vk_commandBufferBeginInfo.flags = 0;
+					vk_commandBufferBeginInfo.pInheritanceInfo = &vk_commandBufferInheritanceInfo;
+				}
+				BVE::Vulkan::Exceptions::Perform(vkBeginCommandBuffer(vk_commandBuffers[i], &vk_commandBufferBeginInfo));
+				{
+					std::vector<VkClearValue> vk_clearValues(2);
+					{
+						vk_clearValues[0];
+						{
+							vk_clearValues[0].color.float32[0] = 1.0f;
+							vk_clearValues[0].color.float32[1] = 0.0f;
+							vk_clearValues[0].color.float32[2] = 0.0f;
+							vk_clearValues[0].color.float32[3] = 1.0f;
+						}
+						vk_clearValues[1];
+						{
+							vk_clearValues[1].depthStencil.depth = 1.0f;
+							vk_clearValues[1].depthStencil.stencil = 0;
+						}
+					}
+					VkRenderPassBeginInfo vk_renderPassBeginInfo;
+					{
+						vk_renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+						vk_renderPassBeginInfo.pNext = nullptr;
+						vk_renderPassBeginInfo.renderPass = vk_renderPass;
+						vk_renderPassBeginInfo.framebuffer = vk_framebuffers[i];
+						vk_renderPassBeginInfo.renderArea.offset;
+						{
+							vk_renderPassBeginInfo.renderArea.offset.x = 0;
+							vk_renderPassBeginInfo.renderArea.offset.y = 0;
+							vk_renderPassBeginInfo.renderArea.extent.width = width;
+							vk_renderPassBeginInfo.renderArea.extent.height = height;
+						}
+						vk_renderPassBeginInfo.clearValueCount = vk_clearValues.size();
+						vk_renderPassBeginInfo.pClearValues = vk_clearValues.data();
+					};
+					vkCmdBeginRenderPass(vk_commandBuffers[i], &vk_renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+					{
+						vkCmdBindDescriptorSets(
+							vk_commandBuffers[i],
+							VK_PIPELINE_BIND_POINT_GRAPHICS,
+							vk_pipelineLayout,
+							0,
+							vk_descriptorSets.size(),
+							vk_descriptorSets.data(),
+							0,
+							nullptr
+						);
+
+						vkCmdBindPipeline(
+							vk_commandBuffers[i],
+							VK_PIPELINE_BIND_POINT_GRAPHICS,
+							vk_pipelines[0]
+						);
+
+						vkCmdSetViewport(
+							vk_commandBuffers[i],
+							0,
+							vk_viewports.size(),
+							vk_viewports.data()
+						);
+
+						vkCmdSetScissor(
+							vk_commandBuffers[i],
+							0,
+							vk_scissors.size(),
+							vk_scissors.data()
+						);
+
+						std::vector<VkBuffer> vk_vertexBuffers = { vk_vertexBuffer };
+						std::vector<VkDeviceSize> vk_vertexOffsets = { 0 };
+						vkCmdBindVertexBuffers(
+							vk_commandBuffers[i],
+							0,
+							vk_vertexBuffers.size(),
+							vk_vertexBuffers.data(),
+							vk_vertexOffsets.data()
+						);
+
+						/*vkCmdDraw(
+							vk_commandBuffers[i],
+							3,
+							1,
+							0,
+							0
+						);*/
+
+						vkCmdBindIndexBuffer(
+							vk_commandBuffers[i],
+							vk_indexBuffer,
+							0,
+							VkIndexType::VK_INDEX_TYPE_UINT32
+						);
+
+						vkCmdDrawIndexed(
+							vk_commandBuffers[i],
+							6,
+							1,
+							0,
+							0,
+							0
+						);
+					}
+					vkCmdEndRenderPass(vk_commandBuffers[i]);
+				}
+				BVE::Vulkan::Exceptions::Perform(vkEndCommandBuffer(vk_commandBuffers[i]));
+			}
+		}
 
 		return std::move(vk_commandBuffers);
 	}();
@@ -1151,154 +1536,21 @@ void main()
 		BVE::Vulkan::QueueWaitIdle(vk_queue);
 		BVE::Vulkan::DeviceWaitIdle(vk_device);
 
-		vk_commandBuffers[0];
+		VkPipelineStageFlags vk_pipelineStageFlags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		std::vector<VkSubmitInfo> vk_submitInfos(1);
 		{
-			VkCommandBufferInheritanceInfo vk_commandBufferInheritanceInfo;
-			{
-				vk_commandBufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-				vk_commandBufferInheritanceInfo.pNext = nullptr;
-				vk_commandBufferInheritanceInfo.renderPass = VK_NULL_HANDLE;
-				vk_commandBufferInheritanceInfo.subpass = 0;
-				vk_commandBufferInheritanceInfo.framebuffer = vk_framebuffers[vk_currentImage];
-				vk_commandBufferInheritanceInfo.occlusionQueryEnable = VK_FALSE;
-				vk_commandBufferInheritanceInfo.queryFlags = 0;
-				vk_commandBufferInheritanceInfo.pipelineStatistics = 0;
-			}
-			VkCommandBufferBeginInfo vk_commandBufferBeginInfo;
-			{
-				vk_commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-				vk_commandBufferBeginInfo.pNext = nullptr;
-				vk_commandBufferBeginInfo.flags = 0;
-				vk_commandBufferBeginInfo.pInheritanceInfo = &vk_commandBufferInheritanceInfo;
-			}
-			BVE::Vulkan::Exceptions::Perform(vkBeginCommandBuffer(vk_commandBuffers[0], &vk_commandBufferBeginInfo));
-			{
-				std::vector<VkClearValue> vk_clearValues(2);
-				{
-					vk_clearValues[0];
-					{
-						vk_clearValues[0].color.float32[0] = 1.0f;
-						vk_clearValues[0].color.float32[1] = 0.0f;
-						vk_clearValues[0].color.float32[2] = 0.0f;
-						vk_clearValues[0].color.float32[3] = 1.0f;
-					}
-					vk_clearValues[1];
-					{
-						vk_clearValues[1].depthStencil.depth = 1.0f;
-						vk_clearValues[1].depthStencil.stencil = 0;
-					}
-				}
-				VkRenderPassBeginInfo vk_renderPassBeginInfo;
-				{
-					vk_renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-					vk_renderPassBeginInfo.pNext = nullptr;
-					vk_renderPassBeginInfo.renderPass = vk_renderPass;
-					vk_renderPassBeginInfo.framebuffer = vk_framebuffers[vk_currentImage];
-					vk_renderPassBeginInfo.renderArea.offset;
-					{
-						vk_renderPassBeginInfo.renderArea.offset.x = 0;
-						vk_renderPassBeginInfo.renderArea.offset.y = 0;
-						vk_renderPassBeginInfo.renderArea.extent.width = width;
-						vk_renderPassBeginInfo.renderArea.extent.height = height;
-					}
-					vk_renderPassBeginInfo.clearValueCount = vk_clearValues.size();
-					vk_renderPassBeginInfo.pClearValues = vk_clearValues.data();
-				};
-				vkCmdBeginRenderPass(vk_commandBuffers[0], &vk_renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-				{
-					vkCmdBindDescriptorSets(
-						vk_commandBuffers[0],
-						VK_PIPELINE_BIND_POINT_GRAPHICS,
-						vk_pipelineLayout,
-						0,
-						vk_descriptorSets.size(),
-						vk_descriptorSets.data(),
-						0,
-						nullptr
-					);
-
-					vkCmdBindPipeline(
-						vk_commandBuffers[0],
-						VK_PIPELINE_BIND_POINT_GRAPHICS,
-						vk_pipelines[0]
-					);
-
-					vkCmdSetViewport(
-						vk_commandBuffers[0],
-						0,
-						vk_viewports.size(),
-						vk_viewports.data()
-					);
-
-					vkCmdSetScissor(
-						vk_commandBuffers[0],
-						0,
-						vk_scissors.size(),
-						vk_scissors.data()
-					);
-
-					std::vector<VkBuffer> vk_vertexBuffers = { vk_buffer };
-					std::vector<VkDeviceSize> vk_vertexOffsets = { 0 };
-					vkCmdBindVertexBuffers(
-						vk_commandBuffers[0],
-						0,
-						vk_vertexBuffers.size(),
-						vk_vertexBuffers.data(),
-						vk_vertexOffsets.data()
-					);
-
-					vkCmdDraw(
-						vk_commandBuffers[0],
-						3,
-						1,
-						0,
-						0
-					);
-
-					/*VkImageMemoryBarrier vk_imageMemoryBarrier;
-					{
-						vk_imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-						vk_imageMemoryBarrier.pNext = nullptr;
-						vk_imageMemoryBarrier.srcAccessMask = 0;
-						vk_imageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-						vk_imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-						vk_imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-						vk_imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-						vk_imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-						vk_imageMemoryBarrier.image = vk_swapchainImages[vk_currentImage];
-						vk_imageMemoryBarrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-					}
-
-					vkCmdPipelineBarrier(
-						vk_commandBuffers[0],
-						VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-						VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-						0,
-						0, nullptr,
-						0, nullptr,
-						1, &vk_imageMemoryBarrier
-					);*/
-				}
-				vkCmdEndRenderPass(vk_commandBuffers[0]);
-			}
-			BVE::Vulkan::Exceptions::Perform(vkEndCommandBuffer(vk_commandBuffers[0]));
-
-			VkPipelineStageFlags vk_pipelineStageFlags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-			std::vector<VkSubmitInfo> vk_submitInfos(1);
-			{
-				vk_submitInfos[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-				vk_submitInfos[0].pNext = nullptr;
-				vk_submitInfos[0].waitSemaphoreCount = 0;
-				vk_submitInfos[0].pWaitSemaphores = nullptr;
-				vk_submitInfos[0].pWaitDstStageMask = &vk_pipelineStageFlags;
-				vk_submitInfos[0].commandBufferCount = vk_commandBuffers.size();
-				vk_submitInfos[0].pCommandBuffers = vk_commandBuffers.data();
-				vk_submitInfos[0].signalSemaphoreCount = 0;
-				vk_submitInfos[0].pSignalSemaphores = nullptr;
-			}
-
-			BVE::Vulkan::QueueSubmit(vk_queue, vk_submitInfos, VK_NULL_HANDLE);
+			vk_submitInfos[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			vk_submitInfos[0].pNext = nullptr;
+			vk_submitInfos[0].waitSemaphoreCount = 0;
+			vk_submitInfos[0].pWaitSemaphores = nullptr;
+			vk_submitInfos[0].pWaitDstStageMask = &vk_pipelineStageFlags;
+			vk_submitInfos[0].commandBufferCount = 1;// vk_commandBuffers.size();
+			vk_submitInfos[0].pCommandBuffers = &vk_commandBuffers[vk_currentImage];// vk_commandBuffers.data();
+			vk_submitInfos[0].signalSemaphoreCount = 0;
+			vk_submitInfos[0].pSignalSemaphores = nullptr;
 		}
+
+		BVE::Vulkan::QueueSubmit(vk_queue, vk_submitInfos, VK_NULL_HANDLE);
 
 		BVE::Vulkan::QueueWaitIdle(vk_queue);
 		BVE::Vulkan::DeviceWaitIdle(vk_device);
@@ -1320,4 +1572,20 @@ void main()
 		BVE::Vulkan::QueueWaitIdle(vk_queue);
 		BVE::Vulkan::DeviceWaitIdle(vk_device);
 	}
+}
+
+void main()
+{
+	BVE::Vulkan::Log::Clear();
+
+	try
+	{
+		BVE::Vulkan::Log::Write("Start vulkan shit...");
+		vulkan();
+	}
+	catch(...)
+	{
+		BVE::Vulkan::Log::Write("Some shit happen...");
+		std::cout << "Some shit happen..." << std::endl;
+	}	
 }
