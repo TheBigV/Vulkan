@@ -3,11 +3,11 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "../Vulkan/Vulkan.hpp"
+#include <Vulkan/Vulkan.hpp>
 #pragma comment(lib, "Vulkan.lib")
 
-//#define BVE_PATH(path) std::wstring(L"") + path
-#define BVE_PATH(path) std::wstring(L"../../../") + path
+//#define KID_PATH(path) std::wstring(L"") + path
+#define KID_PATH(path) std::wstring(L"../../../") + path
 
 #include <fstream>
 
@@ -54,11 +54,553 @@ VkBool32 __stdcall vk_debugCallback(
 	void*                                       pUserData)
 {
 	//MessageBoxA(0, pMessage, pLayerPrefix, MB_OK);
-	BVE::Vulkan::Log::Write("[Vulkan][" + BVE::string(pLayerPrefix) + "]" + BVE::string(pMessage));
+	KID::Vulkan::Log::Write("[Vulkan][" + KID::string(pLayerPrefix) + "]" + KID::string(pMessage));
 	return false;
 }
 
 void vulkan()
+{
+	system("mode con: cols=80 lines=1000");
+	int width = 512;
+	int height = 512;
+	auto hInstance = GetModuleHandle(NULL);
+	auto hWnd = [&](){
+		WNDCLASSEX wndClass;
+		{
+			wndClass.cbSize = sizeof(wndClass);
+			wndClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+			wndClass.lpfnWndProc = [](HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) -> LRESULT { return DefWindowProc(hWnd, msg, wParam, lParam); };
+			wndClass.cbClsExtra = 0;
+			wndClass.cbWndExtra = 0;
+			wndClass.hInstance = hInstance;
+			wndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+			wndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+			wndClass.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);	//NULL_BRUSH;//GetStockObject(NULL_BRUSH);//WHITE_BRUSH);
+			wndClass.lpszMenuName = NULL;
+			wndClass.lpszClassName = L"my window class";
+			wndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
+		}
+
+		if(!RegisterClassEx(&wndClass)) throw std::exception("");
+
+		auto wndStyle = WS_OVERLAPPEDWINDOW;
+		auto wndStyleEx = WS_EX_OVERLAPPEDWINDOW;
+
+		RECT wndRect;
+		{
+			wndRect.left = 100;
+			wndRect.top = 100;
+			wndRect.right = wndRect.top + width;
+			wndRect.bottom = wndRect.left + height;
+			AdjustWindowRectEx(&wndRect, wndStyle, NULL, wndStyleEx);
+		}
+
+		auto hWnd = CreateWindowEx(
+			wndStyleEx,
+			L"my window class",
+			L"window",
+			wndStyle,
+			wndRect.left,
+			wndRect.top,
+			wndRect.right - wndRect.left,
+			wndRect.bottom - wndRect.top,
+			(HWND)NULL,
+			(HMENU)NULL,
+			hInstance,
+			NULL
+		);
+
+		if(!hWnd) throw std::exception("");
+
+		ShowWindow(hWnd, SW_SHOW);
+
+		return hWnd;
+	}();
+	KID::Vulkan::Log::Write("[WinAPI] Window created");
+
+	auto instanceLayersProperties = new KID::Vulkan::InstanceLayersProperties();
+	auto instanceExtensionsProperties = new KID::Vulkan::InstanceExtensionsProperties(*instanceLayersProperties);
+
+	//auto layersName = instanceLayersProperties->layersName;
+	KID::Vulkan::Device::LayersName instanceLayersName = {
+#if _DEBUG
+		"VK_LAYER_GOOGLE_unique_objects",		//wrap all Vulkan objects in a unique pointer at create time and unwrap them at use time
+		"VK_LAYER_LUNARG_device_limits",		//validate that app properly queries features and obeys feature limitations
+		"VK_LAYER_LUNARG_draw_state",			//validate the descriptor set, pipeline state, and dynamic state; validate the interfaces between SPIR - V modules and the graphics pipeline
+		"VK_LAYER_LUNARG_image",				//validate texture formats and render target formats
+		"VK_LAYER_LUNARG_mem_tracker",			//track and validate GPU memory and its binding to objects and command buffers
+		"VK_LAYER_LUNARG_object_tracker",		//track all Vulkan objects and flag invalid objects and object memory leaks
+		"VK_LAYER_LUNARG_param_checker",		//validate API parameter values
+		"VK_LAYER_LUNARG_swapchain",			//validate the use of the WSI "swapchain" extensions
+		"VK_LAYER_GOOGLE_threading",			//check validity of multi - threaded API usage			
+		"VK_LAYER_LUNARG_standard_validation",	// include all above			
+		"VK_LAYER_LUNARG_api_dump",				//print API calls and their parameters and values
+#endif
+	};
+	//auto extensionsName = instanceExtensionsProperties->extensionsName;
+	KID::Vulkan::Device::ExtensionsName instanceExtensionsName = {
+		VK_KHR_SURFACE_EXTENSION_NAME,
+		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+		VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+	};
+
+	auto instance = new KID::Vulkan::Instance(instanceLayersName, instanceExtensionsName);
+	{
+		auto &physicalDevice = instance->GetPhysicalDevices()[0];
+
+		auto deviceLayersProperties = new KID::Vulkan::DeviceLayersProperties(physicalDevice);
+		auto deviceExtensionsProperties = new KID::Vulkan::DeviceExtensionsProperties(physicalDevice, deviceLayersProperties);
+
+		//auto layersName = deviceLayersProperties->layersName;
+		KID::Vulkan::Device::LayersName deviceLayersName = {
+#if _DEBUG
+			"VK_LAYER_GOOGLE_unique_objects", //wrap all Vulkan objects in a unique pointer at create time and unwrap them at use time
+			"VK_LAYER_LUNARG_device_limits", //validate that app properly queries features and obeys feature limitations
+			"VK_LAYER_LUNARG_draw_state", //validate the descriptor set, pipeline state, and dynamic state; validate the interfaces between SPIR - V modules and the graphics pipeline
+			"VK_LAYER_LUNARG_image", //validate texture formats and render target formats
+			"VK_LAYER_LUNARG_mem_tracker", //track and validate GPU memory and its binding to objects and command buffers
+			"VK_LAYER_LUNARG_object_tracker", //track all Vulkan objects and flag invalid objects and object memory leaks
+			"VK_LAYER_LUNARG_param_checker", //validate API parameter values
+			"VK_LAYER_LUNARG_swapchain", //validate the use of the WSI "swapchain" extensions
+			"VK_LAYER_GOOGLE_threading", //check validity of multi - threaded API usage		
+			"VK_LAYER_LUNARG_standard_validation", // include all above		
+			"VK_LAYER_LUNARG_api_dump", //print API calls and their parameters and values
+#endif
+		};
+		//auto extensionsName = deviceExtensionsProperties->extensionsName;
+		KID::Vulkan::Device::ExtensionsName deviceExtensionsName = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+		};
+
+		auto device = new KID::Vulkan::Device(physicalDevice, deviceLayersName, deviceExtensionsName);
+
+		auto queue = new KID::Vulkan::Queue(device, 0, 0);
+		auto commandPool = new KID::Vulkan::CommandPool(device, 0);
+		{
+			commandPool->Reset();
+		}
+		auto descriptorPool = new KID::Vulkan::DescriptorPool(device, {
+			{VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},
+			{VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}}
+		);
+
+		auto surface = new KID::Vulkan::Surface(physicalDevice, hInstance, hWnd);
+		auto swapchain = new KID::Vulkan::Swapchain(
+			device, surface, 0,
+			surface->Vk_GetSurfaceFormats()[0].format, surface->Vk_GetSurfaceFormats()[0].colorSpace,
+			{width, height}
+		);
+
+		auto depthImage = new KID::Vulkan::Image(
+			device,
+			{width, height, 1},
+			KID::Vulkan::Image::Type::VK_IMAGE_TYPE_2D,
+			KID::Vulkan::Image::Format::VK_FORMAT_D32_SFLOAT,
+			KID::Vulkan::Image::Tiling::VK_IMAGE_TILING_OPTIMAL,
+			KID::Vulkan::Image::UsageBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+		);
+		{
+			depthImage->SetDeviceMemory(new KID::Vulkan::DeviceMemory(depthImage));
+			KID::Vulkan::ChangeImageLayout(
+				queue,
+				commandPool,
+				depthImage,
+				0,
+				VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT | VkAccessFlagBits::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+				VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED,
+				VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT
+			);
+		}
+		auto depthImageView = new KID::Vulkan::ImageView(
+			depthImage,
+			KID::Vulkan::ImageView::Type::VK_IMAGE_VIEW_TYPE_2D,
+			KID::Vulkan::ImageView::AspectBits::VK_IMAGE_ASPECT_DEPTH_BIT
+		);
+
+		auto renderPass = new KID::Vulkan::RenderPass(device, {swapchain->GetImages()[0]->Vk_GetFormat()}, {depthImage->Vk_GetFormat()});
+
+		auto vertexShaderSourceCode = std::move(loadFile(KID_PATH(L"Media/Shaders/2.vert.spv")));
+		auto fragmentShaderSourceCode = std::move(loadFile(KID_PATH(L"Media/Shaders/2.frag.spv")));
+		auto vertexShaderModule = new KID::Vulkan::ShaderModule(device, vertexShaderSourceCode);
+		auto fragmentShaderModule = new KID::Vulkan::ShaderModule(device, fragmentShaderSourceCode);
+
+		auto vertexBuffer = new KID::Vulkan::Buffer(device, sizeof(float)* 2 * 4, KID::Vulkan::Buffer::Usages::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		{
+			auto memory = new KID::Vulkan::DeviceMemory(vertexBuffer);
+			{
+				auto data = (float*)memory->Map(0, vertexBuffer->GetSize());
+				std::vector<float> vArr = {
+					-0.5f, +0.5f,
+					+0.5f, +0.5f,
+					-0.5f, -0.5f,
+					+0.5f, -0.5f,
+				};
+				memcpy(data, vArr.data(), vertexBuffer->GetSize());
+				memory->Unmap();
+			}
+			vertexBuffer->SetDeviceMemory(memory);
+		}
+		auto indexBuffer = new KID::Vulkan::Buffer(device, sizeof(uint32_t)* 6, KID::Vulkan::Buffer::Usages::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+		{
+			auto memory = new KID::Vulkan::DeviceMemory(indexBuffer);
+			{
+				auto data = (float*)memory->Map(0, indexBuffer->GetSize());
+				std::vector<uint32_t> iArr = {
+					0, 1, 2,
+					1, 3, 2
+				};
+				memcpy(data, iArr.data(), indexBuffer->GetSize());
+				memory->Unmap();
+			}
+			indexBuffer->SetDeviceMemory(memory);
+		}
+		auto uniformBuffer = new KID::Vulkan::Buffer(device, sizeof(float)*4, KID::Vulkan::Buffer::Usages::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+		{
+			auto memory = new KID::Vulkan::DeviceMemory(uniformBuffer);
+			{
+				auto data = (float*)memory->Map(0, uniformBuffer->GetSize());
+				std::vector<float> iArr = {
+					1.0f, 0.0f, 1.0f, 1.0f
+				};
+				memcpy(data, iArr.data(), uniformBuffer->GetSize());
+				memory->Unmap();
+			}
+			uniformBuffer->SetDeviceMemory(memory);
+		}
+
+		auto textureImage = new KID::Vulkan::Image(
+			device,
+			{512, 512, 1},
+			KID::Vulkan::Image::Type::VK_IMAGE_TYPE_2D,
+			KID::Vulkan::Image::Format::VK_FORMAT_R8G8B8A8_UNORM,
+			KID::Vulkan::Image::Tiling::VK_IMAGE_TILING_LINEAR,
+			KID::Vulkan::Image::UsageBits::VK_IMAGE_USAGE_SAMPLED_BIT,
+			KID::Vulkan::Image::Layout::VK_IMAGE_LAYOUT_PREINITIALIZED
+		);
+		{
+			auto memory = new KID::Vulkan::DeviceMemory(textureImage, VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+			{
+				std::vector<uint32_t> data(textureImage->Vk_GetSize().width*textureImage->Vk_GetSize().height*textureImage->Vk_GetSize().depth, 0xFF00FFFF);
+				for(size_t x = 0; x < 512; ++x)
+				for(size_t y = 0; y < 512; ++y)
+				{
+					auto &color = data[y * 512 + x];
+					color = 0xFF000000 | (((KID::uint32)(x * 255 / 512)) << 8) | (((KID::uint32)(y * 255 / 512)) << 16);
+				}
+				auto p = memory->Map(0, data.size());
+				memcpy(p, data.data(), data.size() * sizeof(uint32_t));
+				memory->Unmap();
+			}
+			textureImage->SetDeviceMemory(memory);
+		}
+		auto textureImageView = new KID::Vulkan::ImageView(
+			textureImage,
+			KID::Vulkan::ImageView::Type::VK_IMAGE_VIEW_TYPE_2D,
+			KID::Vulkan::ImageView::AspectBits::VK_IMAGE_ASPECT_COLOR_BIT
+		);
+		auto textureSampler = new KID::Vulkan::Sampler(
+			device,
+			KID::Vulkan::Sampler::Filter::VK_FILTER_LINEAR, KID::Vulkan::Sampler::Filter::VK_FILTER_LINEAR,
+			KID::Vulkan::Sampler::MipmapMode::VK_SAMPLER_MIPMAP_MODE_NEAREST,
+			KID::Vulkan::Sampler::AddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT, KID::Vulkan::Sampler::AddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT, KID::Vulkan::Sampler::AddressMode::VK_SAMPLER_ADDRESS_MODE_REPEAT
+		);
+
+		auto descriptorSetLayout = new KID::Vulkan::DescriptorSetLayout(device, {
+			{0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr},
+			{1, VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT, nullptr}
+		});
+		auto descriptorSet = new KID::Vulkan::DescriptorSet(descriptorPool, descriptorSetLayout);
+		{
+			std::vector<VkDescriptorBufferInfo> vk_descriptorBufferInfos(1);
+			{
+				vk_descriptorBufferInfos[0].buffer = uniformBuffer->Vk_GetBuffer();
+				vk_descriptorBufferInfos[0].offset = 0;
+				vk_descriptorBufferInfos[0].range = VK_WHOLE_SIZE;
+			}
+			std::vector<VkDescriptorImageInfo> vk_descriptorImageInfos(1);
+			{
+				vk_descriptorImageInfos[0].sampler = textureSampler->Vk_GetSampler();
+				vk_descriptorImageInfos[0].imageView = textureImageView->Vk_GetImageView();
+				vk_descriptorImageInfos[0].imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			}
+
+			std::vector<VkWriteDescriptorSet> vk_writeDescriptorSet(2);
+			{
+				vk_writeDescriptorSet[0];
+				{
+					vk_writeDescriptorSet[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+					vk_writeDescriptorSet[0].pNext = nullptr;
+					vk_writeDescriptorSet[0].dstSet = descriptorSet->Vk_GetDescriptorSet();
+					vk_writeDescriptorSet[0].dstBinding = 0;
+					vk_writeDescriptorSet[0].dstArrayElement = 0;
+					vk_writeDescriptorSet[0].descriptorCount = vk_descriptorBufferInfos.size();
+					vk_writeDescriptorSet[0].descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+					vk_writeDescriptorSet[0].pImageInfo = nullptr;
+					vk_writeDescriptorSet[0].pBufferInfo = vk_descriptorBufferInfos.data();
+					vk_writeDescriptorSet[0].pTexelBufferView = nullptr;
+				}
+				vk_writeDescriptorSet[1];
+				{
+					vk_writeDescriptorSet[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+					vk_writeDescriptorSet[1].pNext = nullptr;
+					vk_writeDescriptorSet[1].dstSet = descriptorSet->Vk_GetDescriptorSet();
+					vk_writeDescriptorSet[1].dstBinding = 1;
+					vk_writeDescriptorSet[1].dstArrayElement = 0;
+					vk_writeDescriptorSet[1].descriptorCount = vk_descriptorImageInfos.size();
+					vk_writeDescriptorSet[1].descriptorType = VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+					vk_writeDescriptorSet[1].pImageInfo = vk_descriptorImageInfos.data();
+					vk_writeDescriptorSet[1].pBufferInfo = nullptr;
+					vk_writeDescriptorSet[1].pTexelBufferView = nullptr;
+				}
+			}
+			vkUpdateDescriptorSets(device->Vk_GetDevice(), vk_writeDescriptorSet.size(), vk_writeDescriptorSet.data(), 0, nullptr);
+		}
+		auto pipelineLayout = new KID::Vulkan::PipelineLayout(device, {descriptorSetLayout});
+		auto pipelineCache = new KID::Vulkan::PipelineCache(device);
+
+		std::vector<KID::Vulkan::ImageView*> swapchainImageViews(swapchain->GetImages().size());
+		std::vector<KID::Vulkan::Framebuffer*> framebuffers(swapchain->GetImages().size());
+		std::vector<KID::Vulkan::CommandBuffer*> commandBuffers(swapchain->GetImages().size());
+		std::vector<KID::Vulkan::Pipeline*> pipelines(swapchain->GetImages().size());
+		{
+			for(size_t i = 0; i < framebuffers.size(); ++i)
+			{
+				auto &swapchainImage = swapchain->GetImages()[i];
+				KID::Vulkan::ChangeImageLayout(
+					queue,
+					commandPool,
+					swapchainImage,
+					0,
+					VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT | VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+					VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED,
+					VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+					VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT
+				);
+
+				auto &swapchainImageView = swapchainImageViews[i];
+				swapchainImageView = new KID::Vulkan::ImageView(
+					swapchainImage,
+					KID::Vulkan::ImageView::Type::VK_IMAGE_VIEW_TYPE_2D,
+					KID::Vulkan::ImageView::AspectBits::VK_IMAGE_ASPECT_COLOR_BIT
+				);
+
+				auto &framebuffer = framebuffers[i];
+				framebuffer = new KID::Vulkan::Framebuffer(renderPass, {swapchainImageView}, depthImageView);
+
+				auto pipelineShaderModules = KID::Vulkan::Pipeline::ShaderModules{
+					{vertexShaderModule, {}},
+					{nullptr, {}},
+					{nullptr, {}},
+					{nullptr, {}},
+					{fragmentShaderModule, {{uniformBuffer, 0, 0, VK_WHOLE_SIZE}}}
+				};
+				auto pipelineVertexBindings = KID::Vulkan::Pipeline::VerticesBindings{
+					{0, sizeof(float)* 2, VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX}
+				};
+				auto pipelineVertexAttributes = KID::Vulkan::Pipeline::VerticesAttributes{
+					{0, 0, VkFormat::VK_FORMAT_R32G32_SFLOAT, 0}
+				};
+				auto pipelineViewports = KID::Vulkan::Pipeline::Viewports{
+					{0, 0, (float)width, (float)height}
+				};
+				auto pipelineScissors = KID::Vulkan::Pipeline::Scissors{
+					{{0, 0}, {width, height}}
+				};
+
+				auto &pipeline = pipelines[i];
+				pipeline = new KID::Vulkan::Pipeline(
+					device, renderPass, pipelineLayout, pipelineCache,
+					pipelineShaderModules,
+					pipelineVertexBindings,
+					pipelineVertexAttributes,
+					KID::Vulkan::Pipeline::Topology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, false,
+					pipelineViewports, pipelineScissors,
+					KID::Vulkan::Pipeline::Fill::VK_POLYGON_MODE_FILL,
+					KID::Vulkan::Pipeline::Culls::VK_CULL_MODE_NONE,
+					KID::Vulkan::Pipeline::Front::VK_FRONT_FACE_COUNTER_CLOCKWISE
+				);
+
+				auto &commandBuffer = commandBuffers[i];
+				commandBuffer = new KID::Vulkan::CommandBuffer(commandPool, KID::Vulkan::CommandBuffer::Level::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+				{
+					commandBuffer->Reset();
+					commandBuffer->Begin(nullptr, 0, framebuffer, false);
+					{
+						renderPass->Begin(commandBuffer, framebuffer, {{0, 0}, {width, height}}, {KID::Vulkan::ClearColorf(1.0f, 0.0f, 0.0f, 1.0f),KID::Vulkan::ClearDepthStencil(1.0f, 0)}, VkSubpassContents::VK_SUBPASS_CONTENTS_INLINE);
+						{
+							vkCmdBindDescriptorSets(
+								commandBuffer->Vk_GetCommandBuffer(),
+								VK_PIPELINE_BIND_POINT_GRAPHICS,
+								pipelineLayout->Vk_GetPipelineLayout(),
+								0,
+								1,
+								&descriptorSet->Vk_GetDescriptorSet(),
+								0,
+								nullptr
+							);
+
+							vkCmdBindPipeline(
+								commandBuffer->Vk_GetCommandBuffer(),
+								VK_PIPELINE_BIND_POINT_GRAPHICS,
+								pipeline->Vk_GetPipeline()
+							);
+
+							vkCmdSetViewport(
+								commandBuffer->Vk_GetCommandBuffer(),
+								0,
+								pipeline->Vk_GetViewports().size(),
+								pipeline->Vk_GetViewports().data()
+							);
+
+							vkCmdSetScissor(
+								commandBuffer->Vk_GetCommandBuffer(),
+								0,
+								pipeline->Vk_GetScissors().size(),
+								pipeline->Vk_GetScissors().data()
+							);
+
+							std::vector<VkBuffer> vk_vertexBuffers = {vertexBuffer->Vk_GetBuffer()};
+							std::vector<VkDeviceSize> vk_vertexOffsets = {0};
+							vkCmdBindVertexBuffers(
+								commandBuffer->Vk_GetCommandBuffer(),
+								0,
+								vk_vertexBuffers.size(),
+								vk_vertexBuffers.data(),
+								vk_vertexOffsets.data()
+							);
+
+							/*vkCmdDraw(
+								commandBuffer->Vk_GetCommandBuffer(),
+								3,
+								1,
+								0,
+								0
+							);*/
+
+							vkCmdBindIndexBuffer(
+								commandBuffer->Vk_GetCommandBuffer(),
+								indexBuffer->Vk_GetBuffer(),
+								0,
+								VkIndexType::VK_INDEX_TYPE_UINT32
+							);
+
+							vkCmdDrawIndexed(
+								commandBuffer->Vk_GetCommandBuffer(),
+								6,
+								1,
+								0,
+								0,
+								0
+							);
+						}
+						renderPass->End(commandBuffer);
+					}
+					commandBuffer->End();
+				}
+			}
+		}
+
+		bool done = false;
+		while(!done)
+		{
+			MSG msg;
+			{
+				PeekMessage(&msg, NULL, 0, 0, PM_REMOVE);
+				if(msg.message == WM_QUIT)
+				{
+					done = true;
+				}
+				else
+				{
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
+				}
+			}
+
+			if(GetAsyncKeyState(VK_UP)) done = true;
+
+			auto currentImage = swapchain->GetNextImage();
+
+			queue->WaitIdle();
+			device->WaitIdle();
+
+			KID::Vulkan::ChangeImageLayout(
+				queue,
+				commandPool,
+				swapchain->GetImages()[currentImage],
+				0,
+				VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT | VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, //VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+				VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT
+			);
+
+			queue->Submit({commandBuffers[currentImage]}, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+
+			queue->WaitIdle();
+			device->WaitIdle();
+
+			KID::Vulkan::ChangeImageLayout(
+				queue,
+				commandPool,
+				swapchain->GetImages()[currentImage],
+				0,
+				VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT | VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, //VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+				VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+				VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT
+			);
+
+			queue->Present({swapchain}, {currentImage});
+
+			queue->WaitIdle();
+			device->WaitIdle();
+		}
+
+		for(auto &swapchainImageView : swapchainImageViews) delete swapchainImageView;
+		for(auto &framebuffer : framebuffers) delete framebuffer;
+		for(auto &pipeline : pipelines) delete pipeline;
+		for(auto &commandBuffer : commandBuffers) delete commandBuffer;
+
+		delete vertexShaderModule;
+		delete fragmentShaderModule;
+
+		delete vertexBuffer->GetDeviceMemory();
+		delete vertexBuffer;
+		delete indexBuffer->GetDeviceMemory();
+		delete indexBuffer;
+		delete uniformBuffer->GetDeviceMemory();
+		delete uniformBuffer;
+
+		delete textureImageView;
+		delete textureImage->GetDeviceMemory();
+		delete textureImage;
+		delete textureSampler;
+
+		delete descriptorSet;
+		delete pipelineLayout;
+		delete descriptorSetLayout;
+		delete pipelineCache;
+
+		delete renderPass;
+
+		delete depthImageView;
+		delete depthImage->GetDeviceMemory();
+		delete depthImage;
+
+		delete queue;
+		delete commandPool;
+		delete descriptorPool;
+
+		delete swapchain;
+		delete surface;
+
+		delete device;
+	}
+	delete instance;
+}
+void vulkan2()
 {
 	system("mode con: cols=80 lines=1000");
 	int width = 512;
@@ -116,15 +658,15 @@ void vulkan()
 
 		return hWnd;
 	}();
-	BVE::Vulkan::Log::Write("[WinAPI] Window created");
+	KID::Vulkan::Log::Write("[WinAPI] Window created");
 
+	KID::Vulkan::InstanceLayersProperties instanceLayersProperties;
+	KID::Vulkan::InstanceExtensionsProperties instanceExtensionsProperties(instanceLayersProperties);
 	auto vk_instance = [&]()
 	{
-		BVE::Vulkan::InstanceLayersProperties instanceLayersProperties;
-		BVE::Vulkan::InstanceExtensionsProperties instanceExtensionsProperties(instanceLayersProperties);
-
 		//auto vk_layers = instanceLayersProperties.layersName;
 		std::vector<const char*> vk_layers = {
+#if _DEBUG
 			"VK_LAYER_GOOGLE_unique_objects",		//wrap all Vulkan objects in a unique pointer at create time and unwrap them at use time
 			"VK_LAYER_LUNARG_device_limits",		//validate that app properly queries features and obeys feature limitations
 			"VK_LAYER_LUNARG_draw_state",			//validate the descriptor set, pipeline state, and dynamic state; validate the interfaces between SPIR - V modules and the graphics pipeline
@@ -133,9 +675,10 @@ void vulkan()
 			"VK_LAYER_LUNARG_object_tracker",		//track all Vulkan objects and flag invalid objects and object memory leaks
 			"VK_LAYER_LUNARG_param_checker",		//validate API parameter values
 			"VK_LAYER_LUNARG_swapchain",			//validate the use of the WSI "swapchain" extensions
-			"VK_LAYER_LUNARG_threading",			//check validity of multi - threaded API usage			
+			"VK_LAYER_GOOGLE_threading",			//check validity of multi - threaded API usage			
 			"VK_LAYER_LUNARG_standard_validation",	// include all above			
 			"VK_LAYER_LUNARG_api_dump",				//print API calls and their parameters and values
+#endif
 		};
 
 		//auto vk_extensions = instanceExtensionsProperties.extensionsName;
@@ -156,7 +699,7 @@ void vulkan()
 			vk_applicationInfo.applicationVersion = 0;
 			vk_applicationInfo.pEngineName = "fuck amd mom";
 			vk_applicationInfo.engineVersion = 0;
-			vk_applicationInfo.apiVersion = VK_API_VERSION;
+			vk_applicationInfo.apiVersion = VK_MAKE_VERSION(1, 0, 3);// VK_MAKE_VERSION(1, 0, 3); VK_API_VERSION;
 		}
 		VkInstanceCreateInfo vk_instanceInfo;
 		{
@@ -170,11 +713,12 @@ void vulkan()
 			vk_instanceInfo.ppEnabledExtensionNames = vk_extensions.data();
 		}
 
-		auto vk_instance = BVE::Vulkan::CreateInstance(&vk_instanceInfo, nullptr);
+		auto vk_instance = KID::Vulkan::CreateInstance(&vk_instanceInfo, nullptr);
 
 		return vk_instance;
 	}();
 		
+#if _DEBUG
 	PFN_vkCreateDebugReportCallbackEXT fnCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(vk_instance, "vkCreateDebugReportCallbackEXT");
 
 	VkDebugReportCallbackEXT vk_debugReportCallbackEXT;
@@ -187,19 +731,21 @@ void vulkan()
 		vk_debugReportCallbackCreateInfoEXT.pfnCallback = vk_debugCallback;
 		vk_debugReportCallbackCreateInfoEXT.pUserData = nullptr;
 	}
-	BVE::Vulkan::Exceptions::Perform(fnCreateDebugReportCallbackEXT(vk_instance, &vk_debugReportCallbackCreateInfoEXT, nullptr, &vk_debugReportCallbackEXT));
+	KID::Vulkan::Exceptions::Perform(fnCreateDebugReportCallbackEXT(vk_instance, &vk_debugReportCallbackCreateInfoEXT, nullptr, &vk_debugReportCallbackEXT));
+#endif
 
-	auto vk_physicalDevice = BVE::Vulkan::EnumeratePhysicalDevices(vk_instance)[0];
-	auto vk_physicalDeviceProperties = BVE::Vulkan::GetPhysicalDeviceProperties(vk_physicalDevice);
-	auto vk_physicalDeviceMemoryProperties = BVE::Vulkan::GetPhysicalDeviceMemoryProperties(vk_physicalDevice);
-	auto vk_physicalDeviceQueueFamilyProperties = BVE::Vulkan::GetPhysicalDeviceQueueFamilyProperties(vk_physicalDevice);
+	auto vk_physicalDevice = KID::Vulkan::EnumeratePhysicalDevices(vk_instance)[0];
+	auto vk_physicalDeviceProperties = KID::Vulkan::GetPhysicalDeviceProperties(vk_physicalDevice);
+	auto vk_physicalDeviceMemoryProperties = KID::Vulkan::GetPhysicalDeviceMemoryProperties(vk_physicalDevice);
+	auto vk_physicalDeviceQueueFamilyProperties = KID::Vulkan::GetPhysicalDeviceQueueFamilyProperties(vk_physicalDevice);
 
-	auto deviceLayerProperties = BVE::Vulkan::DeviceLayersProperties(vk_physicalDevice);
-	auto deviceExtensionsProperties = BVE::Vulkan::DeviceExtensionsProperties(vk_physicalDevice, deviceLayerProperties);
+	auto deviceLayerProperties = KID::Vulkan::DeviceLayersProperties(vk_physicalDevice);
+	auto deviceExtensionsProperties = KID::Vulkan::DeviceExtensionsProperties(vk_physicalDevice, deviceLayerProperties);
 	auto vk_device = [&]()
 	{
 		//auto vk_layers = deviceLayerProperties.layersName;
 		std::vector<const char*> vk_layers = {
+#if _DEBUG
 			"VK_LAYER_GOOGLE_unique_objects", //wrap all Vulkan objects in a unique pointer at create time and unwrap them at use time
 			"VK_LAYER_LUNARG_device_limits", //validate that app properly queries features and obeys feature limitations
 			"VK_LAYER_LUNARG_draw_state", //validate the descriptor set, pipeline state, and dynamic state; validate the interfaces between SPIR - V modules and the graphics pipeline
@@ -208,9 +754,10 @@ void vulkan()
 			"VK_LAYER_LUNARG_object_tracker", //track all Vulkan objects and flag invalid objects and object memory leaks
 			"VK_LAYER_LUNARG_param_checker", //validate API parameter values
 			"VK_LAYER_LUNARG_swapchain", //validate the use of the WSI "swapchain" extensions
-			"VK_LAYER_LUNARG_threading", //check validity of multi - threaded API usage		
+			"VK_LAYER_GOOGLE_threading", //check validity of multi - threaded API usage		
 			"VK_LAYER_LUNARG_standard_validation", // include all above		
 			"VK_LAYER_LUNARG_api_dump", //print API calls and their parameters and values
+#endif
 		};
 
 		//auto vk_extensions = deviceExtensionsProperties.extensionsName;
@@ -309,15 +856,15 @@ void vulkan()
 			vk_deviceCreateInfo.pEnabledFeatures = &vk_physicalDeviceFeatures;
 		};
 
-		auto vk_device = BVE::Vulkan::CreateDevice(vk_physicalDevice, &vk_deviceCreateInfo, nullptr);
+		auto vk_device = KID::Vulkan::CreateDevice(vk_physicalDevice, &vk_deviceCreateInfo, nullptr);
 
 		return vk_device;
 	}();
 
-	auto vk_queue = BVE::Vulkan::GetDeviceQueue(vk_device, 0, 0);
-	auto vk_commandPool = BVE::Vulkan::CreateCommandPool(vk_device, VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, 0, nullptr);
+	auto vk_queue = KID::Vulkan::GetDeviceQueue(vk_device, 0, 0);
+	auto vk_commandPool = KID::Vulkan::CreateCommandPool(vk_device, VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, 0, nullptr);
 	{
-		BVE::Vulkan::ResetCommandPool(vk_device, vk_commandPool, VkCommandPoolResetFlagBits::VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
+		KID::Vulkan::ResetCommandPool(vk_device, vk_commandPool, VkCommandPoolResetFlagBits::VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT);
 	}
 	auto vk_descriptorPool = [&]()
 	{
@@ -337,22 +884,22 @@ void vulkan()
 			vk_descriptorPoolCreateInfo.poolSizeCount = vk_descriptorPoolSizes.size();
 			vk_descriptorPoolCreateInfo.pPoolSizes = vk_descriptorPoolSizes.data();
 		}
-		auto vk_descriptorPool = BVE::Vulkan::CreateDescriptorPool(vk_device, &vk_descriptorPoolCreateInfo, nullptr);
+		auto vk_descriptorPool = KID::Vulkan::CreateDescriptorPool(vk_device, &vk_descriptorPoolCreateInfo, nullptr);
 
 		return vk_descriptorPool;
 	}();
 
-	auto vk_surface = BVE::Vulkan::CreateWin32SurfaceKHR(vk_instance, hInstance, hWnd, nullptr);
-	auto vk_surfaceCapabilities = BVE::Vulkan::GetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physicalDevice, vk_surface);
-	auto vk_physicalDeviceSurfacePresentModes = BVE::Vulkan::GetPhysicalDeviceSurfacePresentModesKHR(vk_physicalDevice, vk_surface);
-	auto vk_surfaceFormats = BVE::Vulkan::GetPhysicalDeviceSurfaceFormatsKHR(vk_physicalDevice, vk_surface);
+	auto vk_surface = KID::Vulkan::CreateWin32SurfaceKHR(vk_instance, hInstance, hWnd, nullptr);
+	auto vk_surfaceCapabilities = KID::Vulkan::GetPhysicalDeviceSurfaceCapabilitiesKHR(vk_physicalDevice, vk_surface);
+	auto vk_physicalDeviceSurfacePresentModes = KID::Vulkan::GetPhysicalDeviceSurfacePresentModesKHR(vk_physicalDevice, vk_surface);
+	auto vk_surfaceFormats = KID::Vulkan::GetPhysicalDeviceSurfaceFormatsKHR(vk_physicalDevice, vk_surface);
 	auto vk_format = vk_surfaceFormats[0].format;
 	auto vk_colorSpace = vk_surfaceFormats[0].colorSpace;
 
 	auto vk_swapchain = [&]()
 	{
 		VkBool32 vk_surfaceSupport = VK_FALSE;
-		BVE::Vulkan::Exceptions::Perform(vkGetPhysicalDeviceSurfaceSupportKHR(vk_physicalDevice, 0, vk_surface, &vk_surfaceSupport));
+		KID::Vulkan::Exceptions::Perform(vkGetPhysicalDeviceSurfaceSupportKHR(vk_physicalDevice, 0, vk_surface, &vk_surfaceSupport));
 
 		VkSwapchainCreateInfoKHR vk_SwapchainCreateInfo;
 		{
@@ -380,11 +927,11 @@ void vulkan()
 			vk_SwapchainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 		}
 
-		auto vk_swapchain = BVE::Vulkan::CreateSwapchainKHR(vk_device, &vk_SwapchainCreateInfo, nullptr);
+		auto vk_swapchain = KID::Vulkan::CreateSwapchainKHR(vk_device, &vk_SwapchainCreateInfo, nullptr);
 
 		return vk_swapchain;
 	}();
-	auto vk_swapchainImages = BVE::Vulkan::GetSwapchainImagesKHR(vk_device, vk_swapchain);
+	auto vk_swapchainImages = KID::Vulkan::GetSwapchainImagesKHR(vk_device, vk_swapchain);
 	auto vk_swapchainImageViews = [&]()
 	{
 		std::vector<VkImageView> vk_swapchainImageViews(vk_swapchainImages.size());
@@ -393,7 +940,7 @@ void vulkan()
 		{
 			auto &vk_swapchainImage = vk_swapchainImages[i];
 
-			auto vk_commandBuffers = BVE::Vulkan::AllocateCommandBuffers(vk_device, vk_commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+			auto vk_commandBuffers = KID::Vulkan::AllocateCommandBuffers(vk_device, vk_commandPool, 1, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 			{
 				VkCommandBufferInheritanceInfo vk_commandBufferInheritanceInfo;
 				{
@@ -413,7 +960,7 @@ void vulkan()
 					vk_commandBufferBeginInfo.flags = 0;
 					vk_commandBufferBeginInfo.pInheritanceInfo = &vk_commandBufferInheritanceInfo;
 				};
-				BVE::Vulkan::BeginCommandBuffer(vk_commandBuffers[0], &vk_commandBufferBeginInfo);
+				KID::Vulkan::BeginCommandBuffer(vk_commandBuffers[0], &vk_commandBufferBeginInfo);
 				{
 					VkImageMemoryBarrier vk_imageMemoryBarrier;
 					{
@@ -447,7 +994,7 @@ void vulkan()
 						1, &vk_imageMemoryBarrier
 					);*/
 				}
-				BVE::Vulkan::EndCommandBuffer(vk_commandBuffers[0]);
+				KID::Vulkan::EndCommandBuffer(vk_commandBuffers[0]);
 
 				VkPipelineStageFlags vk_pipelineStageFlags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 				std::vector<VkSubmitInfo> vk_submitInfos(1);
@@ -462,9 +1009,9 @@ void vulkan()
 					vk_submitInfos[0].signalSemaphoreCount = 0;
 					vk_submitInfos[0].pSignalSemaphores = NULL;
 				}
-				BVE::Vulkan::QueueSubmit(vk_queue, vk_submitInfos, 0);
-				BVE::Vulkan::QueueWaitIdle(vk_queue);
-				BVE::Vulkan::DeviceWaitIdle(vk_device);
+				KID::Vulkan::QueueSubmit(vk_queue, vk_submitInfos, 0);
+				KID::Vulkan::QueueWaitIdle(vk_queue);
+				KID::Vulkan::DeviceWaitIdle(vk_device);
 			}
 
 			auto &vk_swapchainImageView = vk_swapchainImageViews[i];
@@ -494,13 +1041,13 @@ void vulkan()
 				}
 			}
 
-			vk_swapchainImageView = BVE::Vulkan::CreateImageView(vk_device, &vk_imageViewCreateInfo, nullptr);
+			vk_swapchainImageView = KID::Vulkan::CreateImageView(vk_device, &vk_imageViewCreateInfo, nullptr);
 		}
 
 		return std::move(vk_swapchainImageViews);
 	}();
 
-	auto vk_depthFormat = VK_FORMAT_D16_UNORM;// VK_FORMAT_D32_SFLOAT;
+	auto vk_depthFormat = VK_FORMAT_D32_SFLOAT;// VK_FORMAT_D32_SFLOAT;
 	auto vk_depthImage = [&]()
 	{
 		VkImageCreateInfo vk_imageCreateInfo;
@@ -522,9 +1069,9 @@ void vulkan()
 			vk_imageCreateInfo.initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;// VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		}
 
-		auto vk_depthImage = BVE::Vulkan::CreateImage(vk_device, &vk_imageCreateInfo, nullptr);
+		auto vk_depthImage = KID::Vulkan::CreateImage(vk_device, &vk_imageCreateInfo, nullptr);
 
-		auto vk_memoryRequirements = BVE::Vulkan::GetImageMemoryRequirements(vk_device, vk_depthImage);
+		auto vk_memoryRequirements = KID::Vulkan::GetImageMemoryRequirements(vk_device, vk_depthImage);
 
 		VkDeviceMemory vk_deviceMemory;
 		{
@@ -533,12 +1080,12 @@ void vulkan()
 				vk_memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 				vk_memoryAllocateInfo.pNext = nullptr;
 				vk_memoryAllocateInfo.allocationSize = vk_memoryRequirements.size;
-				vk_memoryAllocateInfo.memoryTypeIndex = BVE::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, 0);
+				vk_memoryAllocateInfo.memoryTypeIndex = KID::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, 0);
 			}
 
-			vk_deviceMemory = BVE::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
+			vk_deviceMemory = KID::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
 
-			BVE::Vulkan::BindImageMemory(vk_device, vk_depthImage, vk_deviceMemory, 0);
+			KID::Vulkan::BindImageMemory(vk_device, vk_depthImage, vk_deviceMemory, 0);
 		}
 
 		return vk_depthImage;
@@ -570,7 +1117,7 @@ void vulkan()
 			}
 		}
 
-		auto vk_depthImageView = BVE::Vulkan::CreateImageView(vk_device, &vk_imageViewCreateInfo, nullptr);
+		auto vk_depthImageView = KID::Vulkan::CreateImageView(vk_device, &vk_imageViewCreateInfo, nullptr);
 
 		return vk_depthImageView;
 	}();
@@ -583,13 +1130,13 @@ void vulkan()
 		{
 			vk_subpassAttachmentDescriptions[0].flags = 0;	// VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
 			vk_subpassAttachmentDescriptions[0].format = vk_format;
-			vk_subpassAttachmentDescriptions[0].samples = VK_SAMPLE_COUNT_1_BIT;
-			vk_subpassAttachmentDescriptions[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			vk_subpassAttachmentDescriptions[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			vk_subpassAttachmentDescriptions[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			vk_subpassAttachmentDescriptions[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			vk_subpassAttachmentDescriptions[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			vk_subpassAttachmentDescriptions[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			vk_subpassAttachmentDescriptions[0].samples = VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+			vk_subpassAttachmentDescriptions[0].loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+			vk_subpassAttachmentDescriptions[0].storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+			vk_subpassAttachmentDescriptions[0].stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			vk_subpassAttachmentDescriptions[0].stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			vk_subpassAttachmentDescriptions[0].initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			vk_subpassAttachmentDescriptions[0].finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		}
 		vk_subpassAttachmentDescriptions[1];
 		{
@@ -659,14 +1206,14 @@ void vulkan()
 			vk_renderPassCreateInfo.pDependencies = nullptr;
 		}
 
-		auto vk_renderPass = BVE::Vulkan::CreateRenderPass(vk_device, &vk_renderPassCreateInfo, nullptr);
+		auto vk_renderPass = KID::Vulkan::CreateRenderPass(vk_device, &vk_renderPassCreateInfo, nullptr);
 
 		return vk_renderPass;
 	}();
 
 	auto vk_vertexShaderModule = [&]()
 	{
-		auto vk_vertexShaderSourceCode = std::move(loadFile(BVE_PATH(L"Media/Shaders/1.vert.spv")));
+		auto vk_vertexShaderSourceCode = std::move(loadFile(KID_PATH(L"Media/Shaders/1.vert.spv")));
 
 		VkShaderModuleCreateInfo vk_shaderModuleCreateInfo;
 		{
@@ -677,13 +1224,13 @@ void vulkan()
 			vk_shaderModuleCreateInfo.pCode = vk_vertexShaderSourceCode.data();
 		}
 
-		auto vk_vertexShaderModule = BVE::Vulkan::CreateShaderModule(vk_device, &vk_shaderModuleCreateInfo, nullptr);
+		auto vk_vertexShaderModule = KID::Vulkan::CreateShaderModule(vk_device, &vk_shaderModuleCreateInfo, nullptr);
 
 		return vk_vertexShaderModule;
 	}();
 	auto vk_fragmentShaderModule = [&]()
 	{
-		auto vk_fragmentShaderSourceCode = std::move(loadFile(BVE_PATH(L"Media/Shaders/1.frag.spv")));
+		auto vk_fragmentShaderSourceCode = std::move(loadFile(KID_PATH(L"Media/Shaders/1.frag.spv")));
 
 		VkShaderModuleCreateInfo vk_shaderModuleCreateInfo;
 		{
@@ -694,7 +1241,7 @@ void vulkan()
 			vk_shaderModuleCreateInfo.pCode = vk_fragmentShaderSourceCode.data();
 		}
 
-		auto vk_fragmentShaderModule = BVE::Vulkan::CreateShaderModule(vk_device, &vk_shaderModuleCreateInfo, nullptr);
+		auto vk_fragmentShaderModule = KID::Vulkan::CreateShaderModule(vk_device, &vk_shaderModuleCreateInfo, nullptr);
 
 		return vk_fragmentShaderModule;
 	}();
@@ -732,7 +1279,7 @@ void vulkan()
 		}
 		for(auto &vk_descriptorSetLayout : vk_descriptorSetLayouts)
 		{
-			vk_descriptorSetLayout = BVE::Vulkan::CreateDescriptorSetLayout(vk_device, &vk_descriptorSetLayoutCreateInfo, nullptr);
+			vk_descriptorSetLayout = KID::Vulkan::CreateDescriptorSetLayout(vk_device, &vk_descriptorSetLayoutCreateInfo, nullptr);
 		}
 
 		return vk_descriptorSetLayouts;
@@ -749,7 +1296,7 @@ void vulkan()
 			vk_pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 			vk_pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 		}
-		auto vk_pipelineLayout = BVE::Vulkan::CreatePipelineLayout(vk_device, &vk_pipelineLayoutCreateInfo, nullptr);
+		auto vk_pipelineLayout = KID::Vulkan::CreatePipelineLayout(vk_device, &vk_pipelineLayoutCreateInfo, nullptr);
 
 		return vk_pipelineLayout;
 	}();
@@ -767,7 +1314,7 @@ void vulkan()
 			vk_pipelineCacheCreateInfo.pInitialData = nullptr;
 		}
 
-		auto vk_pipelineCache = BVE::Vulkan::CreatePipelineCache(vk_device, &vk_pipelineCacheCreateInfo, nullptr);
+		auto vk_pipelineCache = KID::Vulkan::CreatePipelineCache(vk_device, &vk_pipelineCacheCreateInfo, nullptr);
 
 		return vk_pipelineCache;
 	}();
@@ -832,7 +1379,7 @@ void vulkan()
 		std::vector<VkVertexInputBindingDescription> vk_vertexInputBindingDescriptions(1);
 		{
 			vk_vertexInputBindingDescriptions[0].binding = 0;
-			vk_vertexInputBindingDescriptions[0].stride = sizeof(BVE::float32) * 2;
+			vk_vertexInputBindingDescriptions[0].stride = sizeof(KID::float32) * 2;
 			vk_vertexInputBindingDescriptions[0].inputRate = VkVertexInputRate::VK_VERTEX_INPUT_RATE_VERTEX;
 		}
 		std::vector<VkVertexInputAttributeDescription> vk_vertexInputAttributeDescriptions(1);
@@ -1009,7 +1556,7 @@ void vulkan()
 			}
 		}
 
-		auto vk_pipelines = BVE::Vulkan::CreateGraphicsPipelines(vk_device, vk_pipelineCache, vk_graphicsPipelineCreateInfos, nullptr);
+		auto vk_pipelines = KID::Vulkan::CreateGraphicsPipelines(vk_device, vk_pipelineCache, vk_graphicsPipelineCreateInfos, nullptr);
 
 		return std::move(vk_pipelines);
 	}();
@@ -1048,7 +1595,7 @@ void vulkan()
 				vk_framebufferCreateInfo.layers = 1;
 			}
 
-			vk_framebuffer = BVE::Vulkan::CreateFramebuffer(vk_device, &vk_framebufferCreateInfo, nullptr);
+			vk_framebuffer = KID::Vulkan::CreateFramebuffer(vk_device, &vk_framebufferCreateInfo, nullptr);
 		}
 
 		return std::move(vk_framebuffers);
@@ -1078,12 +1625,12 @@ void vulkan()
 			vk_imageCreateInfo.sharingMode = VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
 			vk_imageCreateInfo.queueFamilyIndexCount = 0;
 			vk_imageCreateInfo.pQueueFamilyIndices = nullptr;
-			vk_imageCreateInfo.initialLayout = vk_textureLayout;
+			vk_imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;// vk_textureLayout;
 		}
 
-		auto vk_image = BVE::Vulkan::CreateImage(vk_device, &vk_imageCreateInfo, nullptr);
+		auto vk_image = KID::Vulkan::CreateImage(vk_device, &vk_imageCreateInfo, nullptr);
 
-		auto vk_memoryRequirements = BVE::Vulkan::GetImageMemoryRequirements(vk_device, vk_image);
+		auto vk_memoryRequirements = KID::Vulkan::GetImageMemoryRequirements(vk_device, vk_image);
 
 		VkDeviceMemory vk_deviceMemory;
 		{
@@ -1092,18 +1639,18 @@ void vulkan()
 				vk_memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 				vk_memoryAllocateInfo.pNext = nullptr;
 				vk_memoryAllocateInfo.allocationSize = vk_memoryRequirements.size;
-				vk_memoryAllocateInfo.memoryTypeIndex = BVE::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+				vk_memoryAllocateInfo.memoryTypeIndex = KID::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 			}
 
-			vk_deviceMemory = BVE::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
+			vk_deviceMemory = KID::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
 
-			std::vector<BVE::uint32> textureData(1024 * 1024 * 1);
+			std::vector<KID::uint32> textureData(1024 * 1024 * 1);
 			{
 				for(size_t x = 0; x < 1024; ++x)
 				for(size_t y = 0; y < 1024; ++y)
 				{
 					auto &color = textureData[y * 1024 + x];
-					color = 0xFF000000 | (((BVE::uint32)(x * 255 / 1024)) << 8) | (((BVE::uint32)(y * 255 / 1024)) << 16);
+					color = 0xFF000000 | (((KID::uint32)(x * 255 / 1024)) << 8) | (((KID::uint32)(y * 255 / 1024)) << 16);
 				}
 				//for(auto &color : textureData)
 				//{
@@ -1111,13 +1658,13 @@ void vulkan()
 				//}
 			}
 
-			auto data = BVE::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, vk_memoryAllocateInfo.allocationSize, 0);
+			auto data = KID::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, vk_memoryAllocateInfo.allocationSize, 0);
 
-			memcpy(data, textureData.data(), textureData.size() * sizeof(BVE::uint32));
+			memcpy(data, textureData.data(), textureData.size() * sizeof(KID::uint32));
 
-			BVE::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
+			KID::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
 
-			BVE::Vulkan::BindImageMemory(vk_device, vk_image, vk_deviceMemory, 0);
+			KID::Vulkan::BindImageMemory(vk_device, vk_image, vk_deviceMemory, 0);
 		}
 
 		return vk_image;
@@ -1149,7 +1696,7 @@ void vulkan()
 			}
 		}
 
-		auto vk_imageView = BVE::Vulkan::CreateImageView(vk_device, &vk_imageViewCreateInfo, nullptr);
+		auto vk_imageView = KID::Vulkan::CreateImageView(vk_device, &vk_imageViewCreateInfo, nullptr);
 
 		return vk_imageView;
 	}();
@@ -1177,7 +1724,7 @@ void vulkan()
 			vk_samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
 		}
 
-		auto vk_sampler = BVE::Vulkan::CreateSampler(vk_device, &vk_samplerCreateInfo, nullptr);
+		auto vk_sampler = KID::Vulkan::CreateSampler(vk_device, &vk_samplerCreateInfo, nullptr);
 
 		return vk_sampler;
 	}();
@@ -1189,16 +1736,16 @@ void vulkan()
 			vk_bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			vk_bufferCreateInfo.pNext = nullptr;
 			vk_bufferCreateInfo.flags = 0;
-			vk_bufferCreateInfo.size = sizeof(BVE::float32) * 2 * 3;
+			vk_bufferCreateInfo.size = sizeof(KID::float32) * 2 * 3;
 			vk_bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 			vk_bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			vk_bufferCreateInfo.queueFamilyIndexCount = 0;
 			vk_bufferCreateInfo.pQueueFamilyIndices = nullptr;
 		}
 
-		auto vk_buffer = BVE::Vulkan::CreateBuffer(vk_device, &vk_bufferCreateInfo, nullptr);
+		auto vk_buffer = KID::Vulkan::CreateBuffer(vk_device, &vk_bufferCreateInfo, nullptr);
 
-		auto vk_memoryRequirements = BVE::Vulkan::GetBufferMemoryRequirements(vk_device, vk_buffer);
+		auto vk_memoryRequirements = KID::Vulkan::GetBufferMemoryRequirements(vk_device, vk_buffer);
 
 		auto vk_deviceMemory = [&]()
 		{
@@ -1207,28 +1754,28 @@ void vulkan()
 				vk_memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 				vk_memoryAllocateInfo.pNext = nullptr;
 				vk_memoryAllocateInfo.allocationSize = vk_memoryRequirements.size;
-				vk_memoryAllocateInfo.memoryTypeIndex = BVE::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+				vk_memoryAllocateInfo.memoryTypeIndex = KID::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 			}
 
-			auto vk_deviceMemory = BVE::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
+			auto vk_deviceMemory = KID::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
 
 			return vk_deviceMemory;
 		}();
 
-		std::vector<BVE::float32> vArr = {
+		std::vector<KID::float32> vArr = {
 			-0.5f, +0.5f,
 			+0.5f, +0.5f,
 			-0.5f, -0.5f,
 			+0.5f, -0.5f,
 		};
 
-		auto data = BVE::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(BVE::float32) * 2 * 3, 0);
+		auto data = KID::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(KID::float32) * 2 * 3, 0);
 
-		memcpy(data, vArr.data(), vArr.size() * sizeof(BVE::float32));
+		memcpy(data, vArr.data(), vArr.size() * sizeof(KID::float32));
 
-		BVE::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
+		KID::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
 
-		BVE::Vulkan::BindBufferMemory(vk_device, vk_buffer, vk_deviceMemory, 0);
+		KID::Vulkan::BindBufferMemory(vk_device, vk_buffer, vk_deviceMemory, 0);
 
 		return vk_buffer;
 	}();
@@ -1240,16 +1787,16 @@ void vulkan()
 			vk_bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			vk_bufferCreateInfo.pNext = nullptr;
 			vk_bufferCreateInfo.flags = 0;
-			vk_bufferCreateInfo.size = sizeof(BVE::uint32) * 6;
+			vk_bufferCreateInfo.size = sizeof(KID::uint32) * 6;
 			vk_bufferCreateInfo.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 			vk_bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			vk_bufferCreateInfo.queueFamilyIndexCount = 0;
 			vk_bufferCreateInfo.pQueueFamilyIndices = nullptr;
 		}
 
-		auto vk_buffer = BVE::Vulkan::CreateBuffer(vk_device, &vk_bufferCreateInfo, nullptr);
+		auto vk_buffer = KID::Vulkan::CreateBuffer(vk_device, &vk_bufferCreateInfo, nullptr);
 
-		auto vk_memoryRequirements = BVE::Vulkan::GetBufferMemoryRequirements(vk_device, vk_buffer);
+		auto vk_memoryRequirements = KID::Vulkan::GetBufferMemoryRequirements(vk_device, vk_buffer);
 
 		auto vk_deviceMemory = [&]()
 		{
@@ -1258,26 +1805,26 @@ void vulkan()
 				vk_memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 				vk_memoryAllocateInfo.pNext = nullptr;
 				vk_memoryAllocateInfo.allocationSize = vk_memoryRequirements.size;
-				vk_memoryAllocateInfo.memoryTypeIndex = BVE::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+				vk_memoryAllocateInfo.memoryTypeIndex = KID::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 			}
 
-			auto vk_deviceMemory = BVE::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
+			auto vk_deviceMemory = KID::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
 
 			return vk_deviceMemory;
 		}();
 
-		std::vector<BVE::uint32> vArr = {
+		std::vector<KID::uint32> vArr = {
 			0, 1, 2,
 			1, 3, 2
 		};
 
-		auto data = BVE::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(BVE::uint32) * 6, 0);
+		auto data = KID::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(KID::uint32) * 6, 0);
 
-		memcpy(data, vArr.data(), vArr.size() * sizeof(BVE::uint32));
+		memcpy(data, vArr.data(), vArr.size() * sizeof(KID::uint32));
 
-		BVE::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
+		KID::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
 
-		BVE::Vulkan::BindBufferMemory(vk_device, vk_buffer, vk_deviceMemory, 0);
+		KID::Vulkan::BindBufferMemory(vk_device, vk_buffer, vk_deviceMemory, 0);
 
 		return vk_buffer;
 	}();
@@ -1289,16 +1836,16 @@ void vulkan()
 			vk_bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 			vk_bufferCreateInfo.pNext = nullptr;
 			vk_bufferCreateInfo.flags = 0;
-			vk_bufferCreateInfo.size = sizeof(BVE::float32) * 4;
+			vk_bufferCreateInfo.size = sizeof(KID::float32) * 4;
 			vk_bufferCreateInfo.usage = VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 			vk_bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			vk_bufferCreateInfo.queueFamilyIndexCount = 0;
 			vk_bufferCreateInfo.pQueueFamilyIndices = nullptr;
 		}
 
-		auto vk_buffer = BVE::Vulkan::CreateBuffer(vk_device, &vk_bufferCreateInfo, nullptr);
+		auto vk_buffer = KID::Vulkan::CreateBuffer(vk_device, &vk_bufferCreateInfo, nullptr);
 
-		auto vk_memoryRequirements = BVE::Vulkan::GetBufferMemoryRequirements(vk_device, vk_buffer);
+		auto vk_memoryRequirements = KID::Vulkan::GetBufferMemoryRequirements(vk_device, vk_buffer);
 
 		auto vk_deviceMemory = [&]()
 		{
@@ -1307,30 +1854,30 @@ void vulkan()
 				vk_memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 				vk_memoryAllocateInfo.pNext = nullptr;
 				vk_memoryAllocateInfo.allocationSize = vk_memoryRequirements.size;
-				vk_memoryAllocateInfo.memoryTypeIndex = BVE::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+				vk_memoryAllocateInfo.memoryTypeIndex = KID::Vulkan::GetCorrectMemoryType(vk_physicalDeviceMemoryProperties, vk_memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
 			}
 
-			auto vk_deviceMemory = BVE::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
+			auto vk_deviceMemory = KID::Vulkan::AllocateMemory(vk_device, &vk_memoryAllocateInfo, nullptr);
 
 			return vk_deviceMemory;
 		}();
 
-		std::vector<BVE::float32> vArr = {
+		std::vector<KID::float32> vArr = {
 			1.0f, 1.0f, 0.0f, 1.0f
 		};
 
-		auto data = BVE::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(BVE::uint32) * 4, 0);
+		auto data = KID::Vulkan::MapMemory(vk_device, vk_deviceMemory, 0, sizeof(KID::uint32) * 4, 0);
 
-		memcpy(data, vArr.data(), vArr.size() * sizeof(BVE::float32));
+		memcpy(data, vArr.data(), vArr.size() * sizeof(KID::float32));
 
-		BVE::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
+		KID::Vulkan::UnmapMemory(vk_device, vk_deviceMemory);
 
-		BVE::Vulkan::BindBufferMemory(vk_device, vk_buffer, vk_deviceMemory, 0);
+		KID::Vulkan::BindBufferMemory(vk_device, vk_buffer, vk_deviceMemory, 0);
 
 		return vk_buffer;
 	}();
 
-	auto vk_descriptorSets = BVE::Vulkan::AllocateDescriptorSets(vk_device, vk_descriptorPool, 1, vk_descriptorSetLayouts.data());
+	auto vk_descriptorSets = KID::Vulkan::AllocateDescriptorSets(vk_device, vk_descriptorPool, 1, vk_descriptorSetLayouts.data());
 	{
 		std::vector<VkDescriptorBufferInfo> vk_descriptorBufferInfos(1);
 		{
@@ -1380,11 +1927,11 @@ void vulkan()
 
 	auto vk_commandBuffers = [&]()
 	{
-		auto vk_commandBuffers = BVE::Vulkan::AllocateCommandBuffers(vk_device, vk_commandPool, vk_framebuffers.size(), VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+		auto vk_commandBuffers = KID::Vulkan::AllocateCommandBuffers(vk_device, vk_commandPool, vk_framebuffers.size(), VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
 		for(size_t i = 0; i < vk_commandBuffers.size(); ++i)
 		{
-			BVE::Vulkan::ResetCommandBuffer(vk_commandBuffers[i], VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+			KID::Vulkan::ResetCommandBuffer(vk_commandBuffers[i], VkCommandBufferResetFlagBits::VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 			vk_commandBuffers[i];
 			{
 				VkCommandBufferInheritanceInfo vk_commandBufferInheritanceInfo;
@@ -1405,7 +1952,7 @@ void vulkan()
 					vk_commandBufferBeginInfo.flags = 0;
 					vk_commandBufferBeginInfo.pInheritanceInfo = &vk_commandBufferInheritanceInfo;
 				}
-				BVE::Vulkan::Exceptions::Perform(vkBeginCommandBuffer(vk_commandBuffers[i], &vk_commandBufferBeginInfo));
+				KID::Vulkan::Exceptions::Perform(vkBeginCommandBuffer(vk_commandBuffers[i], &vk_commandBufferBeginInfo));
 				{
 					std::vector<VkClearValue> vk_clearValues(2);
 					{
@@ -1432,8 +1979,8 @@ void vulkan()
 						{
 							vk_renderPassBeginInfo.renderArea.offset.x = 0;
 							vk_renderPassBeginInfo.renderArea.offset.y = 0;
-							vk_renderPassBeginInfo.renderArea.extent.width = width;
-							vk_renderPassBeginInfo.renderArea.extent.height = height;
+							vk_renderPassBeginInfo.renderArea.extent.width = width;// +1;
+							vk_renderPassBeginInfo.renderArea.extent.height = height;// +1;
 						}
 						vk_renderPassBeginInfo.clearValueCount = vk_clearValues.size();
 						vk_renderPassBeginInfo.pClearValues = vk_clearValues.data();
@@ -1507,7 +2054,7 @@ void vulkan()
 					}
 					vkCmdEndRenderPass(vk_commandBuffers[i]);
 				}
-				BVE::Vulkan::Exceptions::Perform(vkEndCommandBuffer(vk_commandBuffers[i]));
+				KID::Vulkan::Exceptions::Perform(vkEndCommandBuffer(vk_commandBuffers[i]));
 			}
 		}
 
@@ -1531,10 +2078,10 @@ void vulkan()
 			}
 		}
 
-		auto vk_currentImage = BVE::Vulkan::AcquireNextImageKHR(vk_device, vk_swapchain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE);
+		auto vk_currentImage = KID::Vulkan::AcquireNextImageKHR(vk_device, vk_swapchain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE);
 
-		BVE::Vulkan::QueueWaitIdle(vk_queue);
-		BVE::Vulkan::DeviceWaitIdle(vk_device);
+		KID::Vulkan::QueueWaitIdle(vk_queue);
+		KID::Vulkan::DeviceWaitIdle(vk_device);
 
 		VkPipelineStageFlags vk_pipelineStageFlags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 		std::vector<VkSubmitInfo> vk_submitInfos(1);
@@ -1550,10 +2097,10 @@ void vulkan()
 			vk_submitInfos[0].pSignalSemaphores = nullptr;
 		}
 
-		BVE::Vulkan::QueueSubmit(vk_queue, vk_submitInfos, VK_NULL_HANDLE);
+		KID::Vulkan::QueueSubmit(vk_queue, vk_submitInfos, VK_NULL_HANDLE);
 
-		BVE::Vulkan::QueueWaitIdle(vk_queue);
-		BVE::Vulkan::DeviceWaitIdle(vk_device);
+		KID::Vulkan::QueueWaitIdle(vk_queue);
+		KID::Vulkan::DeviceWaitIdle(vk_device);
 
 		VkResult vk_result;
 		VkPresentInfoKHR vk_presentInfoKHR;
@@ -1567,25 +2114,28 @@ void vulkan()
 			vk_presentInfoKHR.pImageIndices = &vk_currentImage;
 			vk_presentInfoKHR.pResults = &vk_result;
 		}
-		BVE::Vulkan::Exceptions::Perform(vkQueuePresentKHR(vk_queue, &vk_presentInfoKHR));
+		KID::Vulkan::Exceptions::Perform(vkQueuePresentKHR(vk_queue, &vk_presentInfoKHR));
 
-		BVE::Vulkan::QueueWaitIdle(vk_queue);
-		BVE::Vulkan::DeviceWaitIdle(vk_device);
+		KID::Vulkan::QueueWaitIdle(vk_queue);
+		KID::Vulkan::DeviceWaitIdle(vk_device);
 	}
 }
 
 void main()
 {
-	BVE::Vulkan::Log::Clear();
+	KID::Vulkan::Log::Clear();
 
-	try
+	//try
 	{
-		BVE::Vulkan::Log::Write("Start vulkan shit...");
+		KID::Vulkan::Log::Write("Start vulkan shit...");
 		vulkan();
+		//vulkan2();
 	}
-	catch(...)
-	{
-		BVE::Vulkan::Log::Write("Some shit happen...");
-		std::cout << "Some shit happen..." << std::endl;
-	}	
+	//catch(KID::Vulkan::Exception *e)
+	//{
+	//	KID::Vulkan::Log::Write("Some shit happen...");
+	//	std::cout << "Some shit happen..." << std::endl;
+	//}
+
+	std::system("pause");
 }

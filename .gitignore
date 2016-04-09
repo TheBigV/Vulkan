@@ -47,8 +47,11 @@ Temporary Items
 .apdisk
 
 # My ignore
+*.sdf
+*.opensdf
+*.suo
 *.log
 Binaries
-Environment/Visual Studio 2013/Intermediate
+Environment/Visual Studio 2013/_Intermediate
 
 
