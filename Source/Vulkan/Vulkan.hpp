@@ -1,9 +1,7 @@
 #pragma once
 
 #pragma region Include
-#ifndef _CRT_SECURE_NO_WARNINGS
-#define _CRT_SECURE_NO_WARNINGS
-#endif
+#include "../KID/Header.hpp"
 
 #include <cstdint>
 #include <string>
@@ -15,24 +13,10 @@
 #include <algorithm>
 #include <numeric>
 
-#include <half_float/half.hpp>
-//#include <half.hpp>
-
 #define VK_USE_PLATFORM_WIN32_KHR 1
 #define VK_PROTOTYPES 1
 
 #include <vulkan/vulkan.h>
-//#include <vulkan/vulkan.h>
-
-//#include "../../External/Vulkan/include/vulkan/vk_platform.h"
-//#include "../../External/Vulkan/include/vulkan/vk_sdk_platform.h"
-//
-//#include "../../External/Vulkan/include/vulkan/vk_layer.h"
-//#include "../../External/Vulkan/include/vulkan/vk_debug_marker_layer.h"
-//
-//#include "../../External/Vulkan/include/vulkan/vk_lunarg_debug_marker.h"
-//
-//#include "../../External/Vulkan/include/vulkan/vk_icd.h"
 
 #pragma endregion
 
@@ -41,112 +25,6 @@
 
 namespace KID
 {
-#pragma region Typedef
-	typedef std::string										string;
-	typedef std::int8_t										sint8;
-	typedef std::int16_t									sint16;
-	typedef std::int32_t									sint32;
-	typedef std::int64_t									sint64;
-	typedef std::uint8_t									uint8;
-	typedef std::uint16_t									uint16;
-	typedef std::uint32_t									uint32;
-	typedef std::uint64_t									uint64;
-	typedef half_float::half								float16;
-	typedef std::float_t									float32;
-	typedef std::double_t									float64;
-	typedef int												unknownType;
-	typedef std::string										string;
-#pragma endregion
-#pragma region Macro
-	namespace Macro_Default
-	{
-#define __KID_BAN_COPY__(Type) \
-	public: \
-		Type(const Type&) = delete; \
-		Type(Type&&) = delete; \
-	public: \
-		Type& operator = (const Type&) = delete; \
-		Type& operator = (Type&&) = delete;
-	}
-	namespace Macro_Dependency
-	{
-#define __KID_DEPENDENCY_IMPLEMENTATION__(Dependency) \
-	public: \
-		class Exception_UndeletedDependentObjects: public Exception {}; \
-	protected: \
-		std::list<Dependency##Dependent*> dependents; \
-	public: \
-		inline void AttachDependent(Dependency##Dependent* dependent_) \
-		{ \
-			dependents.push_back(dependent_); \
-		} \
-		inline void DetachDependent(Dependency##Dependent* dependent_) \
-		{ \
-			dependents.remove(dependent_); \
-		}
-#define __KID_DEPENDENCY_CHECK__ \
-		if(dependents.size() > 0) \
-		{ \
-			throw new Exception_UndeletedDependentObjects(); \
-		}
-#define __KID_DEPENDENT_DECLARTION__(Dependency)  class Dependency##Dependent;
-#define __KID_DEPENDENT_IMPLEMENTATION__(Dependency, dependency) \
-		class Dependency##Dependent: \
-			public Info \
-		{ \
-		protected: \
-			Dependency*const dependency; \
-		public: \
-			inline Dependency##Dependent(Dependency* dependency##_): \
-			dependency(dependency##_) \
-			{ \
-				__KID_VULKAN_LOG_BEGIN__(Dependency##Dependent()); \
-				dependency->AttachDependent(this); \
-				__KID_VULKAN_LOG_END__; \
-			} \
-			inline ~##Dependency##Dependent() \
-			{ \
-				__KID_VULKAN_LOG_BEGIN__(~Dependency##Dependent()); \
-				dependency->DetachDependent(this); \
-				__KID_VULKAN_LOG_END__; \
-			} \
-		public: \
-			inline Dependency* Get##Dependency() const \
-			{ \
-				return dependency; \
-			} \
-		public: \
-			inline string GetInfoHeader() const \
-			{ \
-				return "[KID][Vulkan]["#Dependency"Dependent]"; \
-			} \
-			inline string GetInfo() const \
-			{ \
-				auto info = Info::GetInfo(); \
-				return (info.size() > 0 ? (info + "\n") : "") + #Dependency + " = " + std::to_string((uint64)dependency); \
-			} \
-		};
-	}
-	namespace Macro_Readonly
-	{
-#define __KID_CONST_REFERENCE_READONLY_FIELD__(Type, name, Accessor) \
-	protected: \
-		Type name; \
-	public: \
-		inline const Type& Accessor() const \
-		{ \
-			return name; \
-		}
-#define __KID_CONST_REFERENCE_READONLY_CONST_FIELD__(Type, name, Accessor) \
-	protected: \
-		const Type name; \
-	public: \
-		inline const Type& Accessor() const \
-		{ \
-			return name; \
-		}
-	}
-#pragma endregion
 	namespace Vulkan
 	{
 #pragma region Preprocessor
@@ -252,6 +130,11 @@ namespace KID
 		class Pipeline; __KID_DEPENDENT_DECLARTION__(Pipeline);
 
 		class Buffer; __KID_DEPENDENT_DECLARTION__(Buffer);
+
+		class Fence; __KID_DEPENDENT_DECLARTION__(Fence);
+
+		class Semaphore; __KID_DEPENDENT_DECLARTION__(Semaphore);
+		typedef std::vector<Semaphore*> Semaphores;
 
 		namespace Log
 		{
@@ -647,7 +530,7 @@ namespace KID
 			Swapchain(Device* device_, Surface* surface_, uint32_t queueFamilyIndex_, Format vk_format_, ColorSpace vk_colorSpace_, Size vk_size_);
 			~Swapchain();
 		public:
-			inline uint32_t GetNextImage() const;
+			inline uint32_t GetNextImage(Semaphore* semaphore, Fence* fence) const;
 #pragma endregion
 #pragma region Info
 		public:
@@ -721,7 +604,7 @@ namespace KID
 		public:
 			inline void WaitIdle();
 		public:
-			inline void Submit(std::vector<CommandBuffer*> commandBuffers, VkPipelineStageFlags vk_pipelineStageFlags);
+			inline void Submit(std::vector<CommandBuffer*> commandBuffers, VkPipelineStageFlags vk_pipelineStageFlags, const Semaphores& waitSemaphores = {}, const Semaphores& signalSemaphores = {}, Fence* fence = nullptr);
 		public:
 			inline void Present(const std::vector<Swapchain*>& swapchains, const std::vector<uint32_t>& imageIndices);
 #pragma endregion
@@ -788,6 +671,8 @@ namespace KID
 			typedef VkImageViewType Type;
 			typedef VkImageAspectFlags Aspect;
 			typedef VkImageAspectFlagBits AspectBits;
+			typedef VkComponentMapping Components;
+			typedef VkComponentSwizzle Swizzle;
 #pragma endregion
 #pragma region Basic
 		protected:
@@ -795,7 +680,7 @@ namespace KID
 			__KID_CONST_REFERENCE_READONLY_CONST_FIELD__(Type, vk_imageViewType, Vk_GetImageViewType);
 			__KID_CONST_REFERENCE_READONLY_CONST_FIELD__(Aspect, vk_imageAspect, Vk_GetImageAspect);
 		public:
-			ImageView(Image* image_, Type type_, Aspect aspect_);
+			ImageView(Image* image_, Type type_, Aspect aspect_, Components components_);
 			~ImageView();
 #pragma endregion
 #pragma region Info
@@ -1108,6 +993,42 @@ namespace KID
 		};
 		__KID_DEPENDENT_IMPLEMENTATION__(Buffer, buffer);
 
+		class Fence:
+			public DeviceDependent
+		{
+		public:
+			inline static bool Wait(const std::vector<Fence*> fences, bool waitAll = true, uint64_t timeout = UINT64_MAX);
+		public:
+			__KID_CONST_REFERENCE_READONLY_FIELD__(VkFence, vk_fence, Vk_GetFence);
+		public:
+			Fence(Device* device_, bool on_ = false);
+			~Fence();
+		public:
+			__KID_VULKAN_IMPLEMENT_INFO_HEADER__(Fence);
+			__KID_DEPENDENCY_IMPLEMENTATION__(Fence);
+		public:
+			inline operator bool();
+		public:
+			inline void Reset();
+			inline bool Wait(uint64_t timeout = UINT64_MAX);
+		};
+		__KID_DEPENDENT_IMPLEMENTATION__(Fence, fence);
+
+
+		class Semaphore:
+			public DeviceDependent
+		{
+		public:
+			__KID_CONST_REFERENCE_READONLY_FIELD__(VkSemaphore, vk_semaphore, Vk_GetSemaphore);
+		public:
+			Semaphore(Device* device_);
+			~Semaphore();
+		public:
+			__KID_VULKAN_IMPLEMENT_INFO_HEADER__(Semaphore);
+			__KID_DEPENDENCY_IMPLEMENTATION__(Semaphore);
+		};
+		__KID_DEPENDENT_IMPLEMENTATION__(Semaphore, semaphore);
+
 #pragma endregion
 #pragma region Func
 		inline VkClearValue										ClearColorf(float r, float g, float b, float a);
@@ -1211,6 +1132,15 @@ namespace KID
 
 		inline std::vector<VkDescriptorSet>						AllocateDescriptorSets(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, uint32_t count, const VkDescriptorSetLayout* vk_descriptorSetLayout);
 		inline void												FreeDescriptorSets(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, const std::vector<VkDescriptorSet>& vk_descriptorSets);
+
+		inline VkFence											CreateFence(VkDevice vk_device, VkFenceCreateInfo* vk_fenceCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
+		inline void												DestroyFence(VkDevice vk_device, VkFence vk_fence, VkAllocationCallbacks* vk_allocationCallbacks);
+		inline bool												GetFenceStatus(VkDevice vk_device, VkFence vk_fence);
+		inline void												ResetFence(VkDevice vk_device, const std::vector<VkFence>& vk_fences);
+		inline bool												WaitForFences(VkDevice vk_device, const std::vector<VkFence>& vk_fences, bool waitAll = true, uint64_t timeout = UINT64_MAX);
+
+		inline VkSemaphore										CreateSemaphore(VkDevice vk_device, VkSemaphoreCreateInfo* vk_semaphoreCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks);
+		inline void												DestroySemaphore(VkDevice vk_device, VkSemaphore vk_semaphore, VkAllocationCallbacks* vk_allocationCallbacks);
 
 		inline uint32_t											GetCorrectMemoryType(const VkPhysicalDeviceMemoryProperties& vk_physicalDeviceMemoryProperties, uint32_t vk_memoryTypeBits, VkFlags flags);
 		
@@ -1560,8 +1490,10 @@ inline void KID::Vulkan::Device::WaitIdle()
 #pragma endregion
 
 #pragma region Swapchain
-inline uint32_t KID::Vulkan::Swapchain::GetNextImage() const
+inline uint32_t KID::Vulkan::Swapchain::GetNextImage(Semaphore* semaphore, Fence* fence) const
 {
+	if(!semaphore && !fence) throw new Exception("Both of semaphore and fence are null!");
+
 	//auto nextImage = KID::Vulkan::AcquireNextImageKHR(device->Vk_GetDevice(), vk_swapchain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE);
 	//
 	//Log::Timestamp();
@@ -1571,7 +1503,13 @@ inline uint32_t KID::Vulkan::Swapchain::GetNextImage() const
 	//
 	//return nextImage;
 
-	return KID::Vulkan::AcquireNextImageKHR(device->Vk_GetDevice(), vk_swapchain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE);
+	return KID::Vulkan::AcquireNextImageKHR(
+		device->Vk_GetDevice(),
+		vk_swapchain,
+		UINT64_MAX,
+		semaphore ? semaphore->Vk_GetSemaphore() : VK_NULL_HANDLE,
+		fence ? fence->Vk_GetFence() : VK_NULL_HANDLE
+	);
 }
 inline KID::string KID::Vulkan::Swapchain::GetInfo() const
 {
@@ -1595,7 +1533,7 @@ inline void KID::Vulkan::Queue::WaitIdle()
 {
 	QueueWaitIdle(vk_queue);
 }
-inline void KID::Vulkan::Queue::Submit(std::vector<CommandBuffer*> commandBuffers, VkPipelineStageFlags vk_pipelineStageFlags)
+inline void KID::Vulkan::Queue::Submit(std::vector<CommandBuffer*> commandBuffers, VkPipelineStageFlags vk_pipelineStageFlags, const Semaphores& waitSemaphores, const Semaphores& signalSemaphores, Fence* fence)
 {
 	__KID_VULKAN_LOG_BEGIN__(Submit());
 
@@ -1605,20 +1543,35 @@ inline void KID::Vulkan::Queue::Submit(std::vector<CommandBuffer*> commandBuffer
 		vk_commandBuffers[i] = commandBuffers[i]->Vk_GetCommandBuffer();
 	}
 
+	std::vector<VkSemaphore> vk_waitSemaphores(waitSemaphores.size());
+	{
+		for(size_t i = 0; i < waitSemaphores.size(); ++i)
+		{
+			vk_waitSemaphores[i] = waitSemaphores[i]->Vk_GetSemaphore();
+		}
+	}
+	std::vector<VkSemaphore> vk_signalSemaphores(signalSemaphores.size());
+	{
+		for(size_t i = 0; i < signalSemaphores.size(); ++i)
+		{
+			vk_signalSemaphores[i] = signalSemaphores[i]->Vk_GetSemaphore();
+		}
+	}
+
 	std::vector<VkSubmitInfo> vk_submitInfos(1);
 	{
 		vk_submitInfos[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		vk_submitInfos[0].pNext = nullptr;
-		vk_submitInfos[0].waitSemaphoreCount = 0;
-		vk_submitInfos[0].pWaitSemaphores = nullptr;
+		vk_submitInfos[0].waitSemaphoreCount = vk_waitSemaphores.size();
+		vk_submitInfos[0].pWaitSemaphores = vk_waitSemaphores.data();
 		vk_submitInfos[0].pWaitDstStageMask = &vk_pipelineStageFlags;
 		vk_submitInfos[0].commandBufferCount = vk_commandBuffers.size();
 		vk_submitInfos[0].pCommandBuffers = vk_commandBuffers.data();
-		vk_submitInfos[0].signalSemaphoreCount = 0;
-		vk_submitInfos[0].pSignalSemaphores = nullptr;
+		vk_submitInfos[0].signalSemaphoreCount = vk_signalSemaphores.size();
+		vk_submitInfos[0].pSignalSemaphores = vk_signalSemaphores.data();
 	}
 
-	QueueSubmit(vk_queue, vk_submitInfos, VK_NULL_HANDLE);
+	QueueSubmit(vk_queue, vk_submitInfos, fence ? fence->Vk_GetFence() : VK_NULL_HANDLE);
 
 	__KID_VULKAN_LOG_END__;
 }
@@ -1761,6 +1714,28 @@ inline void KID::Vulkan::Buffer::SetDeviceMemory(DeviceMemory* deviceMemory_)
 {
 	DeviceMemoryUser::SetDeviceMemory(deviceMemory_);
 	BindBufferMemory(device->Vk_GetDevice(), vk_buffer, deviceMemory->Vk_GetDeviceMemory(), 0);
+}
+#pragma endregion
+
+#pragma region Fence
+inline bool KID::Vulkan::Fence::Wait(const std::vector<Fence*> fences, bool all, uint64_t timeout)
+{
+	std::vector<VkFence> vk_fences(fences.size());
+	for(size_t i = 0; i < fences.size(); ++i) vk_fences[i] = fences[i]->Vk_GetFence();
+	
+	return WaitForFences(fences[0]->GetDevice()->Vk_GetDevice(), vk_fences, all, timeout);
+}
+inline KID::Vulkan::Fence::operator bool()
+{
+	return GetFenceStatus(device->Vk_GetDevice(), vk_fence);
+}
+inline void KID::Vulkan::Fence::Reset()
+{
+	ResetFence(device->Vk_GetDevice(), {vk_fence});
+}
+inline bool KID::Vulkan::Fence::Wait(uint64_t timeout)
+{
+	return WaitForFences(device->Vk_GetDevice(), {vk_fence}, false, timeout);
 }
 #pragma endregion
 
@@ -2175,7 +2150,7 @@ inline uint32_t													KID::Vulkan::AcquireNextImageKHR(VkDevice vk_device,
 {
 	uint32_t vk_currentImage;
 
-	Exceptions::Perform(vkAcquireNextImageKHR(vk_device, vk_swapchain, UINT64_MAX, 0, (VkFence)0, &vk_currentImage));
+	Exceptions::Perform(vkAcquireNextImageKHR(vk_device, vk_swapchain, UINT64_MAX, vk_semaphore, vk_fence, &vk_currentImage));
 
 	return vk_currentImage;
 }
@@ -2691,6 +2666,107 @@ inline std::vector<VkDescriptorSet>								KID::Vulkan::AllocateDescriptorSets(V
 inline void														KID::Vulkan::FreeDescriptorSets(VkDevice vk_device, VkDescriptorPool vk_descriptorPool, const std::vector<VkDescriptorSet>& vk_descriptorSets)
 {
 	vkFreeDescriptorSets(vk_device, vk_descriptorPool, vk_descriptorSets.size(), vk_descriptorSets.data());
+}
+
+inline VkFence													KID::Vulkan::CreateFence(VkDevice vk_device, VkFenceCreateInfo* vk_fenceCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	VkFence vk_fence;
+	auto vk_result = vkCreateFence(vk_device, vk_fenceCreateInfo, vk_allocationCallbacks, &vk_fence);
+	switch(vk_result)
+	{
+		case VK_SUCCESS:
+			break;
+		case VK_ERROR_OUT_OF_HOST_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfHostMemory();
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfDeviceMemory();
+		default:
+			throw KID::Vulkan::Exceptions::Exception_UnknownException(vk_result);
+	}
+
+	return vk_fence;
+}
+inline void														KID::Vulkan::DestroyFence(VkDevice vk_device, VkFence vk_fence, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	vkDestroyFence(vk_device, vk_fence, vk_allocationCallbacks);
+}
+inline bool														KID::Vulkan::GetFenceStatus(VkDevice vk_device, VkFence vk_fence)
+{
+	auto vk_result = vkGetFenceStatus(vk_device, vk_fence);
+	switch(vk_result)
+	{
+		case VK_SUCCESS:
+			return true;
+		case VK_NOT_READY:
+			return false;
+		case VK_ERROR_OUT_OF_HOST_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfHostMemory();
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfDeviceMemory();
+		case VK_ERROR_DEVICE_LOST:
+			throw KID::Vulkan::Exceptions::Exception_DeviceLost();
+		default:
+			throw KID::Vulkan::Exceptions::Exception_UnknownException(vk_result);
+	}
+}
+inline void														KID::Vulkan::ResetFence(VkDevice vk_device, const std::vector<VkFence>& vk_fences)
+{
+	auto vk_result = vkResetFences(vk_device, vk_fences.size(), vk_fences.data());
+	switch(vk_result)
+	{
+		case VK_SUCCESS:
+			break;
+		case VK_ERROR_OUT_OF_HOST_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfHostMemory();
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfDeviceMemory();
+		default:
+			throw KID::Vulkan::Exceptions::Exception_UnknownException(vk_result);
+	}
+}
+inline bool														KID::Vulkan::WaitForFences(VkDevice vk_device, const std::vector<VkFence>& vk_fences, bool waitAll, uint64_t timeout)
+{
+	auto vk_result = vkWaitForFences(vk_device, vk_fences.size(), vk_fences.data(), waitAll, timeout);
+
+	switch(vk_result)
+	{
+		case VK_SUCCESS:
+			return true;
+		case VK_TIMEOUT:
+			return false;
+		case VK_ERROR_OUT_OF_HOST_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfHostMemory();
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfDeviceMemory();
+		case VK_ERROR_DEVICE_LOST:
+			throw KID::Vulkan::Exceptions::Exception_DeviceLost();
+		default:
+			throw KID::Vulkan::Exceptions::Exception_UnknownException(vk_result);
+	}
+}
+
+inline VkSemaphore												KID::Vulkan::CreateSemaphore(VkDevice vk_device, VkSemaphoreCreateInfo* vk_semaphoreCreateInfo, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	VkSemaphore vk_semaphore;
+	auto vk_result = vkCreateSemaphore(vk_device, vk_semaphoreCreateInfo, vk_allocationCallbacks, &vk_semaphore);
+
+	switch(vk_result)
+	{
+		case VK_SUCCESS:
+			break;
+		case VK_ERROR_OUT_OF_HOST_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfHostMemory();
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY:
+			throw KID::Vulkan::Exceptions::Exception_OutOfDeviceMemory();
+		default:
+			throw KID::Vulkan::Exceptions::Exception_UnknownException(vk_result);
+	}
+
+	return vk_semaphore;
+}
+inline void														KID::Vulkan::DestroySemaphore(VkDevice vk_device, VkSemaphore vk_semaphore, VkAllocationCallbacks* vk_allocationCallbacks)
+{
+	vkDestroySemaphore(vk_device, vk_semaphore, vk_allocationCallbacks);
 }
 
 inline uint32_t													KID::Vulkan::GetCorrectMemoryType(const VkPhysicalDeviceMemoryProperties& vk_physicalDeviceMemoryProperties, uint32_t vk_memoryTypeBits, VkFlags flags)

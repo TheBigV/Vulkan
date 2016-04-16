@@ -153,6 +153,8 @@ KID::Vulkan::Device::Device(PhysicalDevice* physicalDevice_, const LayersName& l
 		}
 	}
 
+	//VkPhysicalDeviceFeatures::shaderClipDistance
+	//VkPhysicalDeviceFeatures::shaderCullDistance
 	VkPhysicalDeviceFeatures vk_physicalDeviceFeatures;
 	{
 		vk_physicalDeviceFeatures.robustBufferAccess = VK_FALSE;
@@ -192,8 +194,8 @@ KID::Vulkan::Device::Device(PhysicalDevice* physicalDevice_, const LayersName& l
 		vk_physicalDeviceFeatures.shaderSampledImageArrayDynamicIndexing = VK_FALSE;
 		vk_physicalDeviceFeatures.shaderStorageBufferArrayDynamicIndexing = VK_FALSE;
 		vk_physicalDeviceFeatures.shaderStorageImageArrayDynamicIndexing = VK_FALSE;
-		vk_physicalDeviceFeatures.shaderClipDistance = VK_FALSE;
-		vk_physicalDeviceFeatures.shaderCullDistance = VK_FALSE;
+		vk_physicalDeviceFeatures.shaderClipDistance = VK_TRUE; //VK_FALSE;
+		vk_physicalDeviceFeatures.shaderCullDistance = VK_TRUE; //VK_FALSE;
 		vk_physicalDeviceFeatures.shaderFloat64 = VK_FALSE;
 		vk_physicalDeviceFeatures.shaderInt64 = VK_FALSE;
 		vk_physicalDeviceFeatures.shaderInt16 = VK_FALSE;
@@ -504,7 +506,7 @@ KID::Vulkan::SwapchainImage::~SwapchainImage()
 }
 #pragma endregion
 #pragma region ImageView
-KID::Vulkan::ImageView::ImageView(Image* image_, Type type_, Aspect aspect_):
+KID::Vulkan::ImageView::ImageView(Image* image_, Type type_, Aspect aspect_, Components components_):
 	ImageDependent(image_),
 	vk_imageViewType(type_),
 	vk_imageAspect(aspect_)
@@ -519,13 +521,7 @@ KID::Vulkan::ImageView::ImageView(Image* image_, Type type_, Aspect aspect_):
 		vk_imageViewCreateInfo.image = image->Vk_GetImage();
 		vk_imageViewCreateInfo.viewType = vk_imageViewType;
 		vk_imageViewCreateInfo.format = image->Vk_GetFormat();
-		vk_imageViewCreateInfo.components;
-		{
-			vk_imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
-			vk_imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
-			vk_imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
-			vk_imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
-		}
+		vk_imageViewCreateInfo.components = components_;		
 		vk_imageViewCreateInfo.subresourceRange;
 		{
 			vk_imageViewCreateInfo.subresourceRange.aspectMask = vk_imageAspect;
@@ -621,7 +617,7 @@ KID::Vulkan::RenderPass::RenderPass(Device* device_, const std::vector<Format>& 
 			vk_subpassAttachmentDescriptions[0].storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
 			vk_subpassAttachmentDescriptions[0].stencilLoadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 			vk_subpassAttachmentDescriptions[0].stencilStoreOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			vk_subpassAttachmentDescriptions[0].initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			vk_subpassAttachmentDescriptions[0].initialLayout = VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;// VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			vk_subpassAttachmentDescriptions[0].finalLayout = VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		}
 		vk_subpassAttachmentDescriptions[1];
@@ -728,6 +724,7 @@ KID::Vulkan::Framebuffer::Framebuffer(RenderPass* renderPass_, const std::vector
 		if(depthAttachment_)
 		{
 			vk_framebufferAttachments[i] = depthAttachment_->Vk_GetImageView();
+			++i;
 		}
 	}
 
@@ -1145,36 +1142,36 @@ KID::Vulkan::Pipeline::Pipeline(
 		vk_pipelineDepthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 		vk_pipelineDepthStencilStateCreateInfo.pNext = nullptr;
 		vk_pipelineDepthStencilStateCreateInfo.flags = 0;
-		vk_pipelineDepthStencilStateCreateInfo.depthTestEnable = VK_FALSE;
-		vk_pipelineDepthStencilStateCreateInfo.depthWriteEnable = VK_FALSE;
-		vk_pipelineDepthStencilStateCreateInfo.depthCompareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
+		vk_pipelineDepthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+		vk_pipelineDepthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+		vk_pipelineDepthStencilStateCreateInfo.depthCompareOp = VkCompareOp::VK_COMPARE_OP_LESS_OR_EQUAL;
 		vk_pipelineDepthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
 		vk_pipelineDepthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
 		vk_pipelineDepthStencilStateCreateInfo.front;
 		{
-			vk_pipelineDepthStencilStateCreateInfo.front.failOp = VK_STENCIL_OP_KEEP;
-			vk_pipelineDepthStencilStateCreateInfo.front.passOp = VK_STENCIL_OP_KEEP;
-			vk_pipelineDepthStencilStateCreateInfo.front.depthFailOp = VK_STENCIL_OP_KEEP;
-			vk_pipelineDepthStencilStateCreateInfo.front.compareOp = VK_COMPARE_OP_ALWAYS;
+			vk_pipelineDepthStencilStateCreateInfo.front.failOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+			vk_pipelineDepthStencilStateCreateInfo.front.passOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+			vk_pipelineDepthStencilStateCreateInfo.front.depthFailOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+			vk_pipelineDepthStencilStateCreateInfo.front.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
 			vk_pipelineDepthStencilStateCreateInfo.front.compareMask = 0;
 			vk_pipelineDepthStencilStateCreateInfo.front.writeMask = 0;
 			vk_pipelineDepthStencilStateCreateInfo.front.reference = 0;
 		}
 		vk_pipelineDepthStencilStateCreateInfo.back;
 		{
-			vk_pipelineDepthStencilStateCreateInfo.back.failOp = VK_STENCIL_OP_KEEP;
-			vk_pipelineDepthStencilStateCreateInfo.back.passOp = VK_STENCIL_OP_KEEP;
-			vk_pipelineDepthStencilStateCreateInfo.back.depthFailOp = VK_STENCIL_OP_KEEP;
-			vk_pipelineDepthStencilStateCreateInfo.back.compareOp = VK_COMPARE_OP_ALWAYS;
+			vk_pipelineDepthStencilStateCreateInfo.back.failOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+			vk_pipelineDepthStencilStateCreateInfo.back.passOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+			vk_pipelineDepthStencilStateCreateInfo.back.depthFailOp = VkStencilOp::VK_STENCIL_OP_KEEP;
+			vk_pipelineDepthStencilStateCreateInfo.back.compareOp = VkCompareOp::VK_COMPARE_OP_ALWAYS;
 			vk_pipelineDepthStencilStateCreateInfo.back.compareMask = 0;
 			vk_pipelineDepthStencilStateCreateInfo.back.writeMask = 0;
 			vk_pipelineDepthStencilStateCreateInfo.back.reference = 0;
 		}
 		vk_pipelineDepthStencilStateCreateInfo.minDepthBounds = 0.0f;
-		vk_pipelineDepthStencilStateCreateInfo.maxDepthBounds = 1.0f;
+		vk_pipelineDepthStencilStateCreateInfo.maxDepthBounds = 0.0f;
 	}
 
-	std::vector<VkAttachmentReference> vk_colorAttachmentReferences(1);
+	/*std::vector<VkAttachmentReference> vk_colorAttachmentReferences(1);
 	{
 		vk_colorAttachmentReferences[0].attachment = 0;
 		vk_colorAttachmentReferences[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -1183,8 +1180,8 @@ KID::Vulkan::Pipeline::Pipeline(
 	{
 		vk_depthAttachmentReference.attachment = 1;
 		vk_depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-	}
-	std::vector<VkPipelineColorBlendAttachmentState> vk_pipelineColorBlendAttachmentStates(vk_colorAttachmentReferences.size());
+	}*/
+	std::vector<VkPipelineColorBlendAttachmentState> vk_pipelineColorBlendAttachmentStates(1);// vk_colorAttachmentReferences.size());
 	{
 		for(auto &vk_pipelineColorBlendAttachmentState : vk_pipelineColorBlendAttachmentStates)
 		{
@@ -1228,7 +1225,7 @@ KID::Vulkan::Pipeline::Pipeline(
 		vk_pipelineDynamicStateCreateInfo.dynamicStateCount = vk_dynamicStates.size();
 		vk_pipelineDynamicStateCreateInfo.pDynamicStates = vk_dynamicStates.data();
 	}
-
+	
 	VkGraphicsPipelineCreateInfo vk_graphicsPipelineCreateInfo;
 	{
 		vk_graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -1304,6 +1301,61 @@ KID::Vulkan::Buffer::~Buffer()
 	__KID_DEPENDENCY_CHECK__;
 
 	DestroyBuffer(device->Vk_GetDevice(), vk_buffer, nullptr);
+
+	__KID_VULKAN_LOG_END__;
+}
+#pragma endregion
+#pragma region Fence
+KID::Vulkan::Fence::Fence(Device* device_, bool on_):
+	DeviceDependent(device_)
+{
+	__KID_VULKAN_LOG_BEGIN__(Fence());
+
+	VkFenceCreateInfo vk_fenceCreateInfo;
+	{
+		vk_fenceCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		vk_fenceCreateInfo.pNext = nullptr;
+		vk_fenceCreateInfo.flags = on_ ? VkFenceCreateFlagBits::VK_FENCE_CREATE_SIGNALED_BIT : 0;
+	}
+	
+	vk_fence = CreateFence(device->Vk_GetDevice(), &vk_fenceCreateInfo, nullptr);
+
+	__KID_VULKAN_LOG_END__;
+}
+KID::Vulkan::Fence::~Fence()
+{
+	__KID_VULKAN_LOG_BEGIN__(~Fence());
+
+	__KID_DEPENDENCY_CHECK__;
+
+	DestroyFence(device->Vk_GetDevice(), vk_fence, nullptr);
+
+	__KID_VULKAN_LOG_END__;
+}
+#pragma endregion
+#pragma region Semaphore
+KID::Vulkan::Semaphore::Semaphore(Device* device_):
+	DeviceDependent(device_)
+{
+	__KID_VULKAN_LOG_BEGIN__(Semaphore());
+
+	VkSemaphoreCreateInfo vk_semaphoreCreateInfo;
+	{
+		vk_semaphoreCreateInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		vk_semaphoreCreateInfo.pNext = nullptr;
+		vk_semaphoreCreateInfo.flags = 0;
+	}
+	vk_semaphore = CreateSemaphore(device->Vk_GetDevice(), &vk_semaphoreCreateInfo, nullptr);
+
+	__KID_VULKAN_LOG_END__;
+}
+KID::Vulkan::Semaphore::~Semaphore()
+{
+	__KID_VULKAN_LOG_BEGIN__(~Semaphore());
+
+	__KID_DEPENDENCY_CHECK__;
+
+	DestroySemaphore(device->Vk_GetDevice(), vk_semaphore, nullptr);
 
 	__KID_VULKAN_LOG_END__;
 }

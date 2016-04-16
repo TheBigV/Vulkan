@@ -4,13 +4,29 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Vulkan", "Vulkan\Vulkan.vcxproj", "{C1276571-327F-4648-A55E-ECB9F4B11CA4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{72ACF777-BAAB-4068-8235-E1904A0AD615} = {72ACF777-BAAB-4068-8235-E1904A0AD615}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Console", "Console\Console.vcxproj", "{8F6AF05C-257F-445D-A4CB-06DB3DAE857B}"
 	ProjectSection(ProjectDependencies) = postProject
+		{FD734819-A410-492E-923A-0DF59967C323} = {FD734819-A410-492E-923A-0DF59967C323}
+		{3759C963-EAE2-400C-A92B-DA8E5A816273} = {3759C963-EAE2-400C-A92B-DA8E5A816273}
 		{C1276571-327F-4648-A55E-ECB9F4B11CA4} = {C1276571-327F-4648-A55E-ECB9F4B11CA4}
+		{72ACF777-BAAB-4068-8235-E1904A0AD615} = {72ACF777-BAAB-4068-8235-E1904A0AD615}
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Math", "Math\Math.vcxproj", "{3759C963-EAE2-400C-A92B-DA8E5A816273}"
+	ProjectSection(ProjectDependencies) = postProject
+		{72ACF777-BAAB-4068-8235-E1904A0AD615} = {72ACF777-BAAB-4068-8235-E1904A0AD615}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KID", "KID\KID.vcxproj", "{72ACF777-BAAB-4068-8235-E1904A0AD615}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DevIL", "DevIL\DevIL.vcxproj", "{FD734819-A410-492E-923A-0DF59967C323}"
+	ProjectSection(ProjectDependencies) = postProject
+		{72ACF777-BAAB-4068-8235-E1904A0AD615} = {72ACF777-BAAB-4068-8235-E1904A0AD615}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,6 +58,18 @@ Global
 		{3759C963-EAE2-400C-A92B-DA8E5A816273}.Release|Win32.ActiveCfg = Release|Win32
 		{3759C963-EAE2-400C-A92B-DA8E5A816273}.Release|Win32.Build.0 = Release|Win32
 		{3759C963-EAE2-400C-A92B-DA8E5A816273}.Release|x64.ActiveCfg = Release|Win32
+		{72ACF777-BAAB-4068-8235-E1904A0AD615}.Debug|Win32.ActiveCfg = Debug|Win32
+		{72ACF777-BAAB-4068-8235-E1904A0AD615}.Debug|Win32.Build.0 = Debug|Win32
+		{72ACF777-BAAB-4068-8235-E1904A0AD615}.Debug|x64.ActiveCfg = Debug|Win32
+		{72ACF777-BAAB-4068-8235-E1904A0AD615}.Release|Win32.ActiveCfg = Release|Win32
+		{72ACF777-BAAB-4068-8235-E1904A0AD615}.Release|Win32.Build.0 = Release|Win32
+		{72ACF777-BAAB-4068-8235-E1904A0AD615}.Release|x64.ActiveCfg = Release|Win32
+		{FD734819-A410-492E-923A-0DF59967C323}.Debug|Win32.ActiveCfg = Debug|Win32
+		{FD734819-A410-492E-923A-0DF59967C323}.Debug|Win32.Build.0 = Debug|Win32
+		{FD734819-A410-492E-923A-0DF59967C323}.Debug|x64.ActiveCfg = Debug|Win32
+		{FD734819-A410-492E-923A-0DF59967C323}.Release|Win32.ActiveCfg = Release|Win32
+		{FD734819-A410-492E-923A-0DF59967C323}.Release|Win32.Build.0 = Release|Win32
+		{FD734819-A410-492E-923A-0DF59967C323}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -67,7 +67,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
+    <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)../../Binaries/Visual Studio 2013/$(ConfigurationType)/$(ProjectName)/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/</OutDir>
     <IntDir>$(SolutionDir)/_Intermediate/$(ProjectName)/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/</IntDir>
   </PropertyGroup>
@@ -93,12 +93,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../Source/;$(SolutionDir)../../External/Vulkan/Include/x$(PlatformArchitecture)/;$(SolutionDir)../../External/HalfFloat/Include/x$(PlatformArchitecture)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../Source/;$(SolutionDir)../../External/Vulkan/Include/x$(PlatformArchitecture)/;$(SolutionDir)../../External/HalfFloat/Include/x$(PlatformArchitecture)/;$(SolutionDir)../../External/DevIL/Include/x$(PlatformArchitecture)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)../../Binaries/Visual Studio 2013/StaticLibrary/Vulkan/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)../../Binaries/Visual Studio 2013/StaticLibrary/Vulkan/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/;$(SolutionDir)../../Binaries/Visual Studio 2013/StaticLibrary/Math/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/;$(SolutionDir)../../Binaries/Visual Studio 2013/StaticLibrary/DevIL/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -125,14 +125,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)../../Source/;$(SolutionDir)../../External/Vulkan/Include/x$(PlatformArchitecture)/;$(SolutionDir)../../External/HalfFloat/Include/x$(PlatformArchitecture)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)../../Source/;$(SolutionDir)../../External/Vulkan/Include/x$(PlatformArchitecture)/;$(SolutionDir)../../External/HalfFloat/Include/x$(PlatformArchitecture)/;$(SolutionDir)../../External/DevIL/Include/x$(PlatformArchitecture)/;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(SolutionDir)../../Binaries/Visual Studio 2013/StaticLibrary/Vulkan/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)../../Binaries/Visual Studio 2013/StaticLibrary/Vulkan/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/;$(SolutionDir)../../Binaries/Visual Studio 2013/StaticLibrary/Math/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/;$(SolutionDir)../../Binaries/Visual Studio 2013/StaticLibrary/DevIL/$(Platform)/x$(PlatformArchitecture)/$(Configuration)/</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
